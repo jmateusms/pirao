@@ -7,6 +7,7 @@
   "note": "The same 23 bearings as if the test had been stopped at 100 Mrev: 18 failures and 5 survivors censored at 100 (failure = 0). The censored rows still carry information: the estimates barely move from the complete-data run and the intervals widen only a little (the shape's most), where dropping the 5 survivors would bias the life downward.",
   "note_pt": "Os mesmos 23 rolamentos como se o ensaio tivesse parado em 100 Mrev: 18 falhas e 5 sobreviventes censurados em 100 (failure = 0). As linhas censuradas ainda informam: as estimativas quase não mudam em relação aos dados completos e os intervalos abrem só um pouco (mais o da forma), enquanto descartar os 5 sobreviventes puxaria a vida para baixo.",
   "source": "Lieblein, J. and Zelen, M. (1956). Statistical investigation of the fatigue life of deep-groove ball bearings. Journal of Research of the National Bureau of Standards 57(5), 273-316. Also in Lawless (2003), Statistical Models and Methods for Lifetime Data, 2nd ed., Wiley. Censoring at 100 Mrev is applied here for teaching.",
+  "source_pt": "Lieblein, J. e Zelen, M. (1956). Statistical investigation of the fatigue life of deep-groove ball bearings. Journal of Research of the National Bureau of Standards 57(5), 273-316. Também em Lawless (2003), Statistical Models and Methods for Lifetime Data, 2ª ed., Wiley. A censura em 100 Mrev foi aplicada aqui para fins didáticos.",
   "spec": {
     "likelihood": "weibull",
     "params": {

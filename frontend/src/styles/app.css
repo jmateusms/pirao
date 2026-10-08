@@ -978,3 +978,28 @@ button.primary:disabled {
   top: 0;
   z-index: 9999;
 }
+
+/* ---- PT | EN, the segmented control of farofa gui and faultree gui ---- */
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.seg__option {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border: none;
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.seg__option--on {
+  background: var(--accent);
+  color: #fff;
+}

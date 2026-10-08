@@ -14,6 +14,7 @@ import type {
 } from '../api/types'
 import { Plot } from '../components/Plot'
 import { density2d, quantile, thin } from '../components/density'
+import { decimal, type Key, numberLocale, useI18n } from '../i18n'
 import {
   BLUE,
   BLUE_WASH,
@@ -32,7 +33,11 @@ interface Props {
   spec: ModelSpec
   /** The prior previews as they stood when the run started. */
   validation: SpecValidation | null
+  /** Prior family labels by id, in the reader's language. */
+  priorLabels: Record<string, string>
 }
+
+type T = ReturnType<typeof useI18n>['t']
 
 const VIEWS = ['Overview', 'Table', 'Diagnostics', 'Stan program'] as const
 type View = (typeof VIEWS)[number]
@@ -47,7 +52,8 @@ type View = (typeof VIEWS)[number]
  * is what tells the reader whether the answer came from the data or from the
  * prior.  Numbers in full, sampler diagnostics and the Stan program follow.
  */
-export function ResultsPanel({ run, spec, validation }: Props) {
+export function ResultsPanel({ run, spec, validation, priorLabels }: Props) {
+  const { t } = useI18n()
   const [view, setView] = useState<View>('Overview')
   const [posterior, setPosterior] = useState<Posterior | null>(null)
   const [source, setSource] = useState<string | null>(null)
@@ -72,15 +78,15 @@ export function ResultsPanel({ run, spec, validation }: Props) {
     <div className="stack results">
       <section className="results__head">
         <div>
-          <h2>Results</h2>
+          <h2>{t('res.title')}</h2>
           <p className="muted small">
-            Run {run.id} · seed {run.seed} · {fmtElapsed(summary.elapsed)}
-            {summary.data && <> · {describeData(summary.data, kind, unit)}</>}
+            {t('res.meta', { id: run.id, seed: run.seed ?? '' })} · {fmtElapsed(summary.elapsed, t)}
+            {summary.data && <> · {describeData(summary.data, kind, unit, t)}</>}
           </p>
         </div>
         <div className="row">
           <a className="chip" href={api.drawsUrl(run.id, 'csv')} download>
-            Draws (CSV)
+            {t('res.draws')}
           </a>
           <a className="chip" href={api.drawsUrl(run.id, 'parquet')} download>
             Parquet
@@ -89,9 +95,9 @@ export function ResultsPanel({ run, spec, validation }: Props) {
             className="chip"
             href={api.bundleUrl(run.id)}
             download
-            title="Specification, data, seed, the Stan program and the toolchain versions: everything needed to reproduce the run"
+            title={t('res.bundleHint')}
           >
-            Full analysis (.zip)
+            {t('res.bundle')}
           </a>
         </div>
       </section>
@@ -101,8 +107,8 @@ export function ResultsPanel({ run, spec, validation }: Props) {
       {(summary.data?.weighted || summary.data?.prior_only) && (
         <div className="banner banner--note small">
           {summary.data.prior_only
-            ? 'Prior only: the data were ignored, so these numbers show what the prior alone implies.'
-            : `Relevance weighting: ${summary.data.rows} rows count as ${fmt(summary.data.effective_n)} observations. This is a fractional (pseudo-)posterior, so the intervals are deliberately wider than a standard Bayesian analysis would give.`}
+            ? t('res.priorOnly')
+            : t('res.weighted', { rows: summary.data.rows, n: fmt(summary.data.effective_n) })}
         </div>
       )}
 
@@ -117,7 +123,7 @@ export function ResultsPanel({ run, spec, validation }: Props) {
             className={`tab${view === name ? ' tab--active' : ''}`}
             onClick={() => setView(name)}
           >
-            {name}
+            {t(`view.${name}` as Key)}
           </button>
         ))}
       </nav>
@@ -129,7 +135,12 @@ export function ResultsPanel({ run, spec, validation }: Props) {
             marks={groups.reliability}
             empirical={summary.empirical}
           />
-          <PriorPosteriorGrid posterior={posterior} validation={validation} rows={groups.parameters} />
+          <PriorPosteriorGrid
+            posterior={posterior}
+            validation={validation}
+            rows={groups.parameters}
+            priorLabels={priorLabels}
+          />
         </>
       )}
 
@@ -141,8 +152,8 @@ export function ResultsPanel({ run, spec, validation }: Props) {
 
       {view === 'Stan program' && (
         <section className="card">
-          <h3>The Stan program that was fitted</h3>
-          {source ? <pre className="source">{source}</pre> : <p className="muted">Loading…</p>}
+          <h3>{t('res.stanTitle')}</h3>
+          {source ? <pre className="source">{source}</pre> : <p className="muted">{t('app.loading')}</p>}
         </section>
       )}
     </div>
@@ -177,8 +188,8 @@ function groupRows(table: SummaryRow[], parameters: string[]): Groups {
 function sig(value: number | null | undefined, digits = 3): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—'
   const abs = Math.abs(value)
-  if (abs !== 0 && (abs < 1e-3 || abs >= 1e6)) return value.toExponential(digits - 1)
-  return String(Number(value.toPrecision(digits)))
+  if (abs !== 0 && (abs < 1e-3 || abs >= 1e6)) return decimal(value.toExponential(digits - 1))
+  return decimal(String(Number(value.toPrecision(digits))))
 }
 
 function interval(row: SummaryRow): string {
@@ -186,30 +197,32 @@ function interval(row: SummaryRow): string {
 }
 
 /** `reliability(t=24 h)` -> `24 h`; `reliability(n=100)` -> `100 demands`. */
-function missionOf(row: SummaryRow): { label: string; at: number | null } {
+function missionOf(row: SummaryRow, t: T): { label: string; at: number | null } {
   const match = /\((t|n)=([^)]*)\)/.exec(row.parameter)
-  if (!match) return { label: 'the mission', at: null }
+  if (!match) return { label: t('kpi.theMission'), at: null }
   const at = Number.parseFloat(match[2])
-  const label = match[1] === 'n' ? `${match[2]} demands` : match[2]
+  const label = match[1] === 'n' ? t('kpi.nDemands', { n: match[2] }) : decimal(match[2])
   return { label, at: Number.isFinite(at) ? at : null }
 }
 
-const LIFE_LABELS: Record<string, { title: string; hint: string }> = {
-  mttf: { title: 'Mean time to failure', hint: 'MTTF' },
-  b10: { title: 'B10 life', hint: 'age by which 10% have failed' },
-  mean_demands_to_failure: { title: 'Mean demands to failure', hint: '1 / prob' },
+const LIFE_LABELS: Record<string, { title: Key; hint: Key }> = {
+  mttf: { title: 'life.mttf', hint: 'life.mttfHint' },
+  b10: { title: 'life.b10', hint: 'life.b10Hint' },
+  mean_demands_to_failure: { title: 'life.mdtf', hint: 'life.mdtfHint' },
 }
 
-function describeData(data: DataSummary, kind: string, unit: string): string {
+function describeData(data: DataSummary, kind: string, unit: string, t: T): string {
+  const failures =
+    data.failures === 1 ? t('facts.failure1') : t('facts.failures', { n: data.failures })
   if (data.trials !== undefined && data.censored === undefined) {
-    return `${data.failures} failures in ${data.trials.toLocaleString('en')} trials`
+    return t('facts.inTrials', { f: failures, n: data.trials.toLocaleString(numberLocale()) })
   }
-  const parts = [`${data.failures} failures`]
-  if (data.censored) parts.push(`${data.censored} censored`)
+  const parts = [failures]
+  if (data.censored) parts.push(t('facts.censored', { n: data.censored }))
   if (kind === 'time' && data.exposure !== undefined) {
-    parts.push(`${sig(data.exposure, 4)} ${unit} on test`)
+    parts.push(t('facts.onTest', { x: sig(data.exposure, 4), unit }))
   } else if (data.trials !== undefined) {
-    parts.push(`${data.trials.toLocaleString('en')} demands`)
+    parts.push(t('facts.demands', { n: data.trials.toLocaleString(numberLocale()) }))
   }
   return parts.join(', ')
 }
@@ -226,17 +239,20 @@ function SamplerStatus({
   rows: SummaryRow[]
   onMore: () => void
 }) {
+  const { t } = useI18n()
   const problems = diagnostics.filter((d) => d.severity === 'warning' || d.severity === 'error')
   const notes = diagnostics.filter((d) => d.severity === 'note')
   const rhat = Math.max(...rows.map((r) => r.r_hat).filter(Number.isFinite))
   const ess = Math.min(...rows.map((r) => r.ess_bulk).filter(Number.isFinite))
   const numbers =
-    rows.length > 0 ? `max R-hat ${rhat.toFixed(3)} · min ESS ${Math.round(ess)}` : ''
+    rows.length > 0
+      ? t('status.numbers', { r: decimal(rhat.toFixed(3)), e: Math.round(ess) })
+      : ''
 
   if (problems.length > 0) {
     return (
       <div className="status status--warn">
-        <strong>Check the sampler before trusting these numbers.</strong>
+        <strong>{t('status.check')}</strong>
         <ul>
           {problems.map((d, i) => (
             <li key={i}>
@@ -252,14 +268,14 @@ function SamplerStatus({
     <div className="status status--ok">
       <span className="status__mark" aria-hidden="true">✓</span>
       <span>
-        <strong>The sampler converged.</strong>{' '}
+        <strong>{t('status.ok')}</strong>{' '}
         <span className="muted">{numbers}</span>
         {notes.length > 0 && (
           <>
             {' '}
             ·{' '}
             <button className="link" onClick={onMore}>
-              {notes.length === 1 ? '1 note' : `${notes.length} notes`}
+              {notes.length === 1 ? t('status.note1') : t('status.notes', { n: notes.length })}
             </button>
           </>
         )}
@@ -284,18 +300,19 @@ function Headline({
   kind: string
   unit: string
 }) {
+  const { t } = useI18n()
   const shown = groups.reliability.slice(0, 3)
   const lifeUnit = kind === 'time' ? ` ${unit}` : ''
 
   return (
     <div className="kpis">
       {shown.map((row, index) => {
-        const mission = missionOf(row)
+        const mission = missionOf(row, t)
         return (
           <div key={row.parameter} className={`kpi${index === 0 ? ' kpi--lead' : ''}`}>
-            <div className="kpi__label">Reliability at {mission.label}</div>
+            <div className="kpi__label">{t('kpi.reliabilityAt', { m: mission.label })}</div>
             <div className="kpi__value">{sig(row.mean)}</div>
-            <div className="kpi__sub">90% interval {interval(row)}</div>
+            <div className="kpi__sub">{t('kpi.interval', { a: sig(row.q05), b: sig(row.q95) })}</div>
           </div>
         )
       })}
@@ -304,14 +321,14 @@ function Headline({
           const isDemands = row.parameter === 'mean_demands_to_failure'
           return (
             <div key={row.parameter} className="kpi">
-              <div className="kpi__label" title={label?.hint}>
-                {label?.title ?? row.parameter}
+              <div className="kpi__label" title={label ? t(label.hint) : undefined}>
+                {label ? t(label.title) : row.parameter}
               </div>
               <div className="kpi__value">
                 {sig(row.median)}
-                <span className="kpi__unit">{isDemands ? ' demands' : lifeUnit}</span>
+                <span className="kpi__unit">{isDemands ? ` ${t('model.demands')}` : lifeUnit}</span>
               </div>
-              <div className="kpi__sub">median · 90% {interval(row)}</div>
+              <div className="kpi__sub">{t('kpi.medianInterval', { a: sig(row.q05), b: sig(row.q95) })}</div>
             </div>
           )
         })}
@@ -319,7 +336,7 @@ function Headline({
         <div key={row.parameter} className="kpi kpi--param">
           <div className="kpi__label">{row.parameter}</div>
           <div className="kpi__value">{sig(row.median)}</div>
-          <div className="kpi__sub">median · 90% {interval(row)}</div>
+          <div className="kpi__sub">{t('kpi.medianInterval', { a: sig(row.q05), b: sig(row.q95) })}</div>
           <ParamReading name={row.parameter} row={row} posterior={posterior} spec={spec} />
         </div>
       ))}
@@ -339,28 +356,29 @@ function ParamReading({
   posterior: Posterior | null
   spec: ModelSpec
 }) {
+  const { t } = useI18n()
   if (name === 'shape' && (spec.likelihood === 'weibull' || spec.likelihood === 'gamma')) {
     const draws = posterior?.columns[name]
     if (!draws || draws.length === 0) return null
     const above = draws.filter((v) => v > 1).length / draws.length
-    const p = above > 0.99 ? '> 0.99' : above < 0.01 ? '< 0.01' : `= ${sig(above, 2)}`
-    const reading =
-      above > 0.95
-        ? 'wear-out: failures become more frequent with age'
-        : above < 0.05
-          ? 'early failures: the hazard falls with age'
-          : 'the data cannot tell whether the hazard rises or falls'
+    const p =
+      above > 0.99 ? `> ${decimal('0.99')}` : above < 0.01 ? `< ${decimal('0.01')}` : `= ${sig(above, 2)}`
+    const reading = t(above > 0.95 ? 'read.wearout' : above < 0.05 ? 'read.early' : 'read.unclear')
     return (
       <div className="kpi__note">
-        P(shape &gt; 1) {p}: {reading}
+        {t('read.pShape', { p, reading })}
       </div>
     )
   }
   if (name === 'prob' && row.median > 0) {
-    return <div className="kpi__note">about 1 failure in {sig(1 / row.median, 2)} demands</div>
+    return <div className="kpi__note">{t('read.prob', { n: sig(1 / row.median, 2) })}</div>
   }
   if (name === 'rate' && spec.likelihood === 'exponential' && row.median > 0) {
-    return <div className="kpi__note">one failure every {sig(1 / row.median)} {spec.time_unit}, typically</div>
+    return (
+      <div className="kpi__note">
+        {t('read.rate', { x: sig(1 / row.median), unit: spec.time_unit ?? '' })}
+      </div>
+    )
   }
   return null
 }
@@ -372,25 +390,28 @@ function PriorPosteriorGrid({
   posterior,
   validation,
   rows,
+  priorLabels,
 }: {
   posterior: Posterior | null
   validation: SpecValidation | null
   rows: SummaryRow[]
+  priorLabels: Record<string, string>
 }) {
+  const { t } = useI18n()
   const curves = posterior?.prior_posterior
-  if (!posterior) return <section className="card"><p className="muted">Loading the draws…</p></section>
+  if (!posterior)
+    return (
+      <section className="card">
+        <p className="muted">{t('pp.loading')}</p>
+      </section>
+    )
   if (!curves || Object.keys(curves).length === 0) return null
 
   return (
     <section className="stack">
       <div className="section-title">
-        <h3>What the data changed</h3>
-        <p className="muted small">
-          Each parameter&apos;s posterior (filled) over the prior that was in force
-          (dashed), which is the prior after your bounds. A posterior much
-          narrower than the prior means the data decided; one that copies the
-          prior means they could not.
-        </p>
+        <h3>{t('pp.title')}</h3>
+        <p className="muted small">{t('pp.intro')}</p>
       </div>
       <div className="grid2">
         {rows.map((row) =>
@@ -399,6 +420,11 @@ function PriorPosteriorGrid({
               key={row.parameter}
               name={row.parameter}
               curve={curves[row.parameter]}
+              familyLabel={
+                (curves[row.parameter].prior_family &&
+                  priorLabels[curves[row.parameter].prior_family!]) ||
+                curves[row.parameter].prior_label
+              }
               row={row}
               prior={validation?.parameters.find((p) => p.name === row.parameter)?.preview ?? null}
             />
@@ -412,14 +438,17 @@ function PriorPosteriorGrid({
 function PriorPosteriorCard({
   name,
   curve,
+  familyLabel,
   row,
   prior,
 }: {
   name: string
   curve: PriorPosterior
+  familyLabel: string
   row: SummaryRow
   prior: { median: number | null; q05: number | null; q95: number | null } | null
 }) {
+  const { t } = useI18n()
   const { data, scale } = useMemo(() => {
     const top = Math.max(...curve.posterior)
     const priorValues = curve.prior ?? []
@@ -438,8 +467,8 @@ function PriorPosteriorCard({
         fill: 'tozeroy',
         fillcolor: BLUE_WASH,
         line: { color: BLUE, width: 2 },
-        name: 'posterior',
-        hovertemplate: '%{x:.4g}<br>posterior %{y:.3g}<extra></extra>',
+        name: t('pp.posterior'),
+        hovertemplate: `%{x:.4g}<br>${t('pp.posterior')} %{y:.3g}<extra></extra>`,
       },
     ]
     if (curve.prior) {
@@ -449,20 +478,23 @@ function PriorPosteriorCard({
         x: curve.x,
         y: priorValues.map((v) => (v === null ? null : v * scale)),
         line: { color: '#5e5e5a', width: 1.8, dash: 'dash' },
-        name: scale === 1 ? `prior (${curve.prior_label})` : `prior × ${sig(scale, 2)}`,
-        hovertemplate: '%{x:.4g}<extra>prior</extra>',
+        name:
+          scale === 1
+            ? t('pp.prior', { label: familyLabel })
+            : t('pp.priorScaled', { k: sig(scale, 2) }),
+        hovertemplate: `%{x:.4g}<extra>${t('pp.priorShort')}</extra>`,
         connectgaps: false,
       })
     }
     return { data: traces, scale }
-  }, [curve])
+  }, [curve, familyLabel, t])
 
   const layout = useMemo(
     () => ({
       margin: { l: 44, r: 12, t: 8, b: 40 },
       xaxis: { title: name },
       yaxis: {
-        title: 'density',
+        title: t('marg.density'),
         range: [0, 1.12 * Math.max(...curve.posterior)],
         showticklabels: false,
       },
@@ -470,7 +502,7 @@ function PriorPosteriorCard({
       legend: { orientation: 'h', x: 0, y: 1.12 },
       hovermode: 'x',
     }),
-    [name, curve],
+    [name, curve, t],
   )
 
   const narrowed =
@@ -481,16 +513,16 @@ function PriorPosteriorCard({
   return (
     <section className="card">
       <h3>{name}</h3>
-      <Plot data={data} layout={layout} height={230} description={`Prior and posterior of ${name}`} />
+      <Plot data={data} layout={layout} height={230} description={t('pp.describe', { name })} />
       <p className="muted small">
         {prior?.median != null && (
           <>
-            prior median {sig(prior.median)} (90% {sig(prior.q05)} – {sig(prior.q95)}) →{' '}
+            {t('pp.priorSummary', { m: sig(prior.median), a: sig(prior.q05), b: sig(prior.q95) })}{' '}
           </>
         )}
-        posterior median {sig(row.median)} (90% {interval(row)})
-        {narrowed !== null && narrowed > 1.05 && <> · interval {sig(narrowed, 2)}× narrower</>}
-        {scale !== 1 && <> · prior drawn ×{sig(scale, 2)} to show its shape</>}
+        {t('pp.postSummary', { m: sig(row.median), i: interval(row) })}
+        {narrowed !== null && narrowed > 1.05 && <> · {t('pp.narrower', { k: sig(narrowed, 2) })}</>}
+        {scale !== 1 && <> · {t('pp.scaled', { k: sig(scale, 2) })}</>}
       </p>
     </section>
   )
@@ -508,28 +540,33 @@ function SummaryTable({
   unit: string
   dropped: string[]
 }) {
+  const { t } = useI18n()
   const sections: { title: string; rows: SummaryRow[]; label: (r: SummaryRow) => string }[] = [
-    { title: 'Reliability', rows: groups.reliability, label: (r) => `R(${missionOf(r).label})` },
-    { title: 'Parameters', rows: groups.parameters, label: (r) => r.parameter },
     {
-      title: unit ? `Life (${unit})` : 'Life',
-      rows: groups.life,
-      label: (r) => LIFE_LABELS[r.parameter]?.title ?? r.parameter,
+      title: t('tbl.reliability'),
+      rows: groups.reliability,
+      label: (r) => `R(${missionOf(r, t).label})`,
     },
-    { title: 'Other', rows: groups.other, label: (r) => r.parameter },
+    { title: t('tbl.parameters'), rows: groups.parameters, label: (r) => r.parameter },
+    {
+      title: unit ? t('tbl.lifeUnit', { unit }) : t('tbl.life'),
+      rows: groups.life,
+      label: (r) => (LIFE_LABELS[r.parameter] ? t(LIFE_LABELS[r.parameter].title) : r.parameter),
+    },
+    { title: t('tbl.other'), rows: groups.other, label: (r) => r.parameter },
   ]
   return (
     <section className="card">
       <table className="table table--summary">
         <thead>
           <tr>
-            <th>quantity</th>
-            <th>mean</th>
-            <th>median</th>
-            <th>90% interval</th>
-            <th>sd</th>
-            <th title="Potential scale reduction: should be below 1.01">R-hat</th>
-            <th title="Effective sample size, bulk / tail: 400 or more is comfortable">ESS</th>
+            <th>{t('tbl.quantity')}</th>
+            <th>{t('tbl.mean')}</th>
+            <th>{t('tbl.median')}</th>
+            <th>{t('tbl.interval')}</th>
+            <th>{t('tbl.sd')}</th>
+            <th title={t('tbl.rhatHint')}>R-hat</th>
+            <th title={t('tbl.essHint')}>ESS</th>
           </tr>
         </thead>
         {sections
@@ -546,7 +583,7 @@ function SummaryTable({
                   <td>{sig(row.median, 4)}</td>
                   <td className="nowrap">{sig(row.q05, 4)} – {sig(row.q95, 4)}</td>
                   <td>{sig(row.sd, 3)}</td>
-                  <td className={row.r_hat > 1.01 ? 'flag' : 'muted'}>{row.r_hat.toFixed(3)}</td>
+                  <td className={row.r_hat > 1.01 ? 'flag' : 'muted'}>{decimal(row.r_hat.toFixed(3))}</td>
                   <td className={row.ess_bulk < 400 || row.ess_tail < 400 ? 'flag' : 'muted'}>
                     {Math.round(row.ess_bulk)} / {Math.round(row.ess_tail)}
                   </td>
@@ -556,10 +593,8 @@ function SummaryTable({
           ))}
       </table>
       <p className="muted small">
-        Intervals are equal-tailed: 5% of the posterior lies below, 5% above. For
-        reliability the mean is the probability of surviving given everything
-        observed; for skewed quantities such as life, read the median.
-        {dropped.length > 0 && <> Not shown because every draw was infinite: {dropped.join(', ')}.</>}
+        {t('tbl.note')}
+        {dropped.length > 0 && <> {t('tbl.dropped', { list: dropped.join(', ') })}</>}
       </p>
     </section>
   )
@@ -577,6 +612,7 @@ function DiagnosticsView({
   diagnostics: Diagnostic[]
   posterior: Posterior | null
 }) {
+  const { t } = useI18n()
   const [mode, setMode] = useState<DiagnosticView>('Traces')
   return (
     <div className="stack">
@@ -592,8 +628,8 @@ function DiagnosticsView({
         </div>
       ))}
       <div className="viz-toolbar">
-        <span className="muted small">How the sampler explored the posterior.</span>
-        <div className="segmented" role="group" aria-label="Diagnostic view">
+        <span className="muted small">{t('diag.how')}</span>
+        <div className="segmented" role="group" aria-label={t('diag.aria')}>
           {(['Traces', 'Marginals', 'Joint'] as const).map((name) => (
             <button
               key={name}
@@ -601,12 +637,12 @@ function DiagnosticsView({
               aria-pressed={mode === name}
               onClick={() => setMode(name)}
             >
-              {name}
+              {t(`diag.${name}` as Key)}
             </button>
           ))}
         </div>
       </div>
-      {!posterior && <p className="muted">Loading the draws…</p>}
+      {!posterior && <p className="muted">{t('pp.loading')}</p>}
       {posterior && mode === 'Traces' && <TracesView posterior={posterior} />}
       {posterior && mode === 'Marginals' && <DistributionsView posterior={posterior} />}
       {posterior && mode === 'Joint' && <JointView posterior={posterior} />}
@@ -642,6 +678,7 @@ const LOG_RATIO = 1e4
 const CLIP_RATIO = 20
 
 function MarginalCard({ label, values }: { label: string; values: number[] }) {
+  const { t } = useI18n()
   const stats = useMemo(() => {
     const finite = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
     const min = finite[0]
@@ -690,11 +727,11 @@ function MarginalCard({ label, values }: { label: string; values: number[] }) {
         // drawn around each one.
         marker: { color: BLUE, line: { width: 1, color: '#ffffff' } },
         hovertemplate: stats.log
-          ? '10<sup>%{x:.2f}</sup><br>density per decade %{y:.3g}<extra></extra>'
-          : '%{x}<br>density %{y:.3g}<extra></extra>',
+          ? `10<sup>%{x:.2f}</sup><br>${t('marg.densityPerDecade')} %{y:.3g}<extra></extra>`
+          : `%{x}<br>${t('marg.density')} %{y:.3g}<extra></extra>`,
       },
     ],
-    [values, stats.log, stats.clipped, stats.lo, stats.hi],
+    [values, stats.log, stats.clipped, stats.lo, stats.hi, t],
   )
 
   const decades = useMemo(() => {
@@ -715,12 +752,12 @@ function MarginalCard({ label, values }: { label: string; values: number[] }) {
     return {
       margin: { l: 52, r: 16, t: 10, b: 44 },
       xaxis: {
-        title: stats.log ? `${label} (log scale)` : label,
+        title: stats.log ? t('marg.logScale', { label }) : label,
         ...(stats.log && decades ? decades : {}),
         ...(stats.clipped ? { range: [stats.lo, stats.hi] } : {}),
       },
       yaxis: {
-        title: stats.log ? 'density per decade' : 'density',
+        title: t(stats.log ? 'marg.densityPerDecade' : 'marg.density'),
         rangemode: 'tozero',
       },
       shapes: marked
@@ -742,7 +779,7 @@ function MarginalCard({ label, values }: { label: string; values: number[] }) {
               x: at,
               yref: 'paper',
               y: 1,
-              text: 'median',
+              text: t('marg.median'),
               showarrow: false,
               yanchor: 'bottom',
               font: { size: 11, color: VIOLET },
@@ -750,7 +787,7 @@ function MarginalCard({ label, values }: { label: string; values: number[] }) {
           ]
         : [],
     }
-  }, [label, stats.median, stats.log, stats.clipped, stats.lo, stats.hi, decades])
+  }, [label, stats.median, stats.log, stats.clipped, stats.lo, stats.hi, decades, t])
 
   return (
     <section className="card">
@@ -759,14 +796,11 @@ function MarginalCard({ label, values }: { label: string; values: number[] }) {
         data={data}
         layout={layout}
         height={260}
-        description={`Posterior distribution of ${label}`}
+        description={t('marg.describe', { label })}
       />
       <p className="muted small">
-        median {fmt(stats.median)} · 90% interval {fmt(stats.q05)} to{' '}
-        {fmt(stats.q95)}
-        {stats.clipped && (
-          <> · axis clipped: the tail runs out to {fmt(stats.max)}</>
-        )}
+        {t('marg.caption', { m: fmt(stats.median), a: fmt(stats.q05), b: fmt(stats.q95) })}
+        {stats.clipped && <> · {t('marg.clipped', { x: fmt(stats.max) })}</>}
       </p>
     </section>
   )
@@ -786,16 +820,17 @@ function TracesView({ posterior }: { posterior: Posterior }) {
 }
 
 function TraceCard({ posterior, name }: { posterior: Posterior; name: string }) {
-  const data = useMemo(() => traceSeries(posterior, name), [posterior, name])
+  const { t } = useI18n()
+  const data = useMemo(() => traceSeries(posterior, name, t), [posterior, name, t])
   const layout = useMemo(
     () => ({
       margin: { l: 58, r: 16, t: 10, b: 44 },
-      xaxis: { title: 'draw' },
+      xaxis: { title: t('trace.draw') },
       yaxis: { title: name },
       showlegend: true,
       hovermode: 'closest',
     }),
-    [name],
+    [name, t],
   )
 
   return (
@@ -805,17 +840,14 @@ function TraceCard({ posterior, name }: { posterior: Posterior; name: string }) 
         data={data}
         layout={layout}
         height={240}
-        description={`Sampler trace for ${name}, one line per chain`}
+        description={t('trace.describe', { name })}
       />
-      <p className="muted small">
-        Chains should overlap and look like noise around a stable level. A chain
-        drifting apart from the others means they have not agreed.
-      </p>
+      <p className="muted small">{t('trace.caption')}</p>
     </section>
   )
 }
 
-function traceSeries(posterior: Posterior, name: string) {
+function traceSeries(posterior: Posterior, name: string, t: T) {
   const values = posterior.columns[name] ?? []
   const chains = posterior.chain
   // Thinner than the 2px house line: four of these overlap on purpose, and at
@@ -828,7 +860,7 @@ function traceSeries(posterior: Posterior, name: string) {
         type: 'scattergl',
         mode: 'lines',
         y: values,
-        name: 'all draws',
+        name: t('trace.all'),
         line: { ...line, color: SERIES[0] },
       },
     ]
@@ -847,7 +879,7 @@ function traceSeries(posterior: Posterior, name: string) {
     mode: 'lines',
     x: series.x,
     y: series.y,
-    name: `chain ${chain}`,
+    name: t('trace.chain', { n: chain }),
     line: { ...line, color: SERIES[index % SERIES.length] },
   }))
 }
@@ -858,6 +890,7 @@ function traceSeries(posterior: Posterior, name: string) {
 type JointMode = '3d' | '2d'
 
 function JointView({ posterior }: { posterior: Posterior }) {
+  const { t } = useI18n()
   const [mode, setMode] = useState<JointMode>('3d')
 
   const pairs = useMemo(() => {
@@ -872,10 +905,7 @@ function JointView({ posterior }: { posterior: Posterior }) {
   if (pairs.length === 0) {
     return (
       <section className="card">
-        <p className="muted">
-          This model has a single parameter, so there is no joint distribution
-          to show. See Distributions instead.
-        </p>
+        <p className="muted">{t('joint.single')}</p>
       </section>
     )
   }
@@ -883,23 +913,21 @@ function JointView({ posterior }: { posterior: Posterior }) {
   return (
     <div className="stack">
       <div className="viz-toolbar">
-        <span className="muted small">
-          Posterior density over each pair of parameters.
-        </span>
-        <div className="segmented" role="group" aria-label="How to draw the joint density">
+        <span className="muted small">{t('joint.intro')}</span>
+        <div className="segmented" role="group" aria-label={t('joint.aria')}>
           <button
             className={`segmented__option${mode === '3d' ? ' segmented__option--on' : ''}`}
             onClick={() => setMode('3d')}
             aria-pressed={mode === '3d'}
           >
-            3D surface
+            {t('joint.3d')}
           </button>
           <button
             className={`segmented__option${mode === '2d' ? ' segmented__option--on' : ''}`}
             onClick={() => setMode('2d')}
             aria-pressed={mode === '2d'}
           >
-            2D contour
+            {t('joint.2d')}
           </button>
         </div>
       </div>
@@ -926,9 +954,10 @@ function JointCard({
 }) {
   const xs = posterior.columns[x] ?? []
   const ys = posterior.columns[y] ?? []
+  const { t } = useI18n()
   const grid = useMemo(() => density2d(xs, ys), [xs, ys])
 
-  const hover = `${x} %{x:.4g}<br>${y} %{y:.4g}<br>density %{z:.3g}<extra></extra>`
+  const hover = `${x} %{x:.4g}<br>${y} %{y:.4g}<br>${t('marg.density')} %{z:.3g}<extra></extra>`
 
   const data = useMemo(() => {
     if (!grid) return []
@@ -983,10 +1012,10 @@ function JointCard({
         y: dots.map((d) => d[1]),
         marker: { size: 2.5, color: 'rgba(13, 54, 107, 0.4)' },
         hoverinfo: 'skip',
-        name: 'draws',
+        name: t('joint.draws'),
       },
     ]
-  }, [grid, mode, hover, xs, ys])
+  }, [grid, mode, hover, xs, ys, t])
 
   const layout = useMemo(() => {
     if (mode === '3d') {
@@ -997,7 +1026,7 @@ function JointCard({
         scene: {
           xaxis: { ...SCENE_AXIS, title: x },
           yaxis: { ...SCENE_AXIS, title: y },
-          zaxis: { ...SCENE_AXIS, title: 'density' },
+          zaxis: { ...SCENE_AXIS, title: t('marg.density') },
           // Pulled in and widened so the surface fills the card rather than
           // floating in the middle of it.
           camera: { eye: { x: 1.5, y: -1.6, z: 0.78 } },
@@ -1012,27 +1041,24 @@ function JointCard({
       yaxis: { title: y },
       hovermode: 'closest',
     }
-  }, [mode, x, y])
+  }, [mode, x, y, t])
 
   return (
     <section className="card">
-      <h3>
-        {x} vs {y}
-      </h3>
+      <h3>{t('joint.vs', { x, y })}</h3>
       {grid ? (
         <Plot
           data={data}
           layout={layout}
           height={mode === '3d' ? 440 : 340}
-          description={`Joint posterior density of ${x} and ${y}`}
+          description={t('joint.describe', { x, y })}
         />
       ) : (
-        <div className="placeholder">Not enough draws to estimate a density.</div>
+        <div className="placeholder">{t('joint.notEnough')}</div>
       )}
       <p className="muted small">
-        A ridge running diagonally means the data cannot tell these two apart —
-        only their combination is pinned down.
-        {mode === '3d' && ' Drag to rotate; the shadow underneath is the same density seen from above.'}
+        {t('joint.caption')}
+        {mode === '3d' && ` ${t('joint.rotate')}`}
       </p>
     </section>
   )
@@ -1049,9 +1075,10 @@ interface ReliabilityProps {
 }
 
 function ReliabilityView({ curve, marks, empirical }: ReliabilityProps) {
+  const { t } = useI18n()
   const data = useMemo(() => {
     if (!curve) return []
-    const traces = reliabilityTraces(curve)
+    const traces = reliabilityTraces(curve, t)
     if (empirical && empirical.steps.length > 1) {
       // The data's own curve, so the eye can check the fit: a model that
       // misses the steps is the wrong model, however narrow its band.
@@ -1061,8 +1088,8 @@ function ReliabilityView({ curve, marks, empirical }: ReliabilityProps) {
         x: empirical.steps.map((p) => p.t),
         y: empirical.steps.map((p) => p.s),
         line: { color: '#2b2b2b', width: 1.4, shape: 'hv' },
-        name: 'data (Kaplan–Meier)',
-        hovertemplate: '%{x}: %{y:.3f}<extra>data</extra>',
+        name: t('rel.km'),
+        hovertemplate: `%{x}: %{y:.3f}<extra>${t('rel.km')}</extra>`,
       })
       if (empirical.censored.length > 0) {
         traces.push({
@@ -1071,13 +1098,13 @@ function ReliabilityView({ curve, marks, empirical }: ReliabilityProps) {
           x: empirical.censored.map((p) => p.t),
           y: empirical.censored.map((p) => p.s),
           marker: { symbol: 'line-ns-open', size: 9, color: '#2b2b2b', line: { width: 1.4 } },
-          name: 'censored',
-          hovertemplate: '%{x}<extra>censored</extra>',
+          name: t('rel.censored'),
+          hovertemplate: `%{x}<extra>${t('rel.censored')}</extra>`,
         })
       }
     }
     const points = marks
-      .map((row) => ({ at: missionOf(row).at, row }))
+      .map((row) => ({ at: missionOf(row, t).at, row }))
       .filter((m): m is { at: number; row: SummaryRow } => m.at !== null && m.at > 0)
     if (points.length > 0) {
       traces.push({
@@ -1098,17 +1125,17 @@ function ReliabilityView({ curve, marks, empirical }: ReliabilityProps) {
         textposition: 'middle right',
         textfont: { color: CRITICAL, size: 12 },
         marker: { color: CRITICAL, size: 8 },
-        name: 'at the mission',
-        hovertemplate: '%{x}: %{y:.4f}<extra>at the mission</extra>',
+        name: t('rel.atMission'),
+        hovertemplate: `%{x}: %{y:.4f}<extra>${t('rel.atMission')}</extra>`,
       })
     }
     return traces
-  }, [curve, marks, empirical])
+  }, [curve, marks, empirical, t])
 
   const axisLabel = curve
     ? curve.kind === 'time'
-      ? `time${curve.unit ? ` (${curve.unit})` : ''}`
-      : 'demands survived'
+      ? `${t('rel.time')}${curve.unit ? ` (${curve.unit})` : ''}`
+      : t('rel.demands')
     : ''
 
   // The model's curve sets the window; the data's steps may run further and
@@ -1127,49 +1154,43 @@ function ReliabilityView({ curve, marks, empirical }: ReliabilityProps) {
       margin: { l: 58, r: 20, t: 10, b: 48 },
       xaxis: { title: axisLabel, ...(right ? { range: [0, right] } : { rangemode: 'tozero' }) },
       yaxis: {
-        title: floor > 0 ? `reliability R (axis from ${floor})` : 'reliability R',
+        title: floor > 0 ? t('rel.axisFrom', { f: decimal(String(floor)) }) : t('rel.axis'),
         range: [floor, 1 + 0.02 * (1 - floor)],
       },
       showlegend: true,
       legend: { orientation: 'h', x: 0, y: -0.2 },
       hovermode: 'x unified',
     }),
-    [axisLabel, right, floor],
+    [axisLabel, right, floor, t],
   )
 
   if (!curve || curve.points.length === 0) {
     return (
       <section className="card">
-        <h3>Reliability</h3>
-        <p className="muted">
-          There is no reliability curve for this run: it had neither a mission
-          nor any data to set a time scale by. Set a mission time on the Model
-          tab and run again.
-        </p>
+        <h3>{t('rel.title')}</h3>
+        <p className="muted">{t('rel.none')}</p>
       </section>
     )
   }
 
   return (
     <section className="card">
-      <h3>Reliability over {curve.kind === 'time' ? 'time' : 'demands'}</h3>
+      <h3>{t(curve.kind === 'time' ? 'rel.titleTime' : 'rel.titleDemands')}</h3>
       <Plot
         data={data}
         layout={layout}
         height={400}
-        description="Posterior reliability against time, with a 90% credible band"
+        description={t('rel.describe')}
       />
       <p className="muted small">
-        The line is the posterior mean, the probability of surviving that long
-        given everything observed; the band holds 90% of the posterior at each
-        point, so it widens where the data stop saying much. Red marks the
-        mission.{empirical && ' The black steps are the data alone (Kaplan–Meier, ticks for censored units): the fitted curve should run through them.'}
+        {t('rel.caption')}
+        {empirical && ` ${t('rel.captionKm')}`}
       </p>
     </section>
   )
 }
 
-function reliabilityTraces(curve: ReliabilityOverTime): Record<string, unknown>[] {
+function reliabilityTraces(curve: ReliabilityOverTime, t: T): Record<string, unknown>[] {
   const x = curve.points.map((p) => p.x)
   const reversed = [...x].reverse()
 
@@ -1185,7 +1206,7 @@ function reliabilityTraces(curve: ReliabilityOverTime): Record<string, unknown>[
       fillcolor: BLUE_WASH,
       line: { color: 'transparent' },
       hoverinfo: 'skip',
-      name: '90% interval',
+      name: t('rel.band'),
       showlegend: true,
     },
     {
@@ -1194,8 +1215,8 @@ function reliabilityTraces(curve: ReliabilityOverTime): Record<string, unknown>[
       x,
       y: curve.points.map((p) => p.median),
       line: { color: VIOLET, width: 1.5, dash: 'dash' },
-      name: 'median',
-      hovertemplate: '%{y:.4f}<extra>median</extra>',
+      name: t('rel.median'),
+      hovertemplate: `%{y:.4f}<extra>${t('rel.median')}</extra>`,
     },
     {
       type: 'scatter',
@@ -1203,8 +1224,8 @@ function reliabilityTraces(curve: ReliabilityOverTime): Record<string, unknown>[
       x,
       y: curve.points.map((p) => p.mean),
       line: { color: BLUE, width: 2.5 },
-      name: 'mean',
-      hovertemplate: '%{y:.4f}<extra>mean</extra>',
+      name: t('rel.mean'),
+      hovertemplate: `%{y:.4f}<extra>${t('rel.mean')}</extra>`,
     },
   ]
 
@@ -1225,16 +1246,19 @@ function reliabilityTraces(curve: ReliabilityOverTime): Record<string, unknown>[
       x: mx,
       y: my,
       line: { color: CRITICAL, width: 2, dash: 'dot' },
-      name: missions.length > 1 ? 'mission times' : 'mission',
+      name: t(missions.length > 1 ? 'rel.missions' : 'rel.mission'),
       hoverinfo: 'skip',
     })
   }
   return traces
 }
 
-function fmtElapsed(elapsed: Record<string, number>): string {
+function fmtElapsed(elapsed: Record<string, number>, t: T): string {
   const parts = Object.entries(elapsed)
     .filter(([, seconds]) => seconds > 0.01)
-    .map(([stage, seconds]) => `${stage} ${seconds.toFixed(1)}s`)
+    .map(([stage, seconds]) => {
+      const key = `elapsed.${stage}` as Key
+      return `${t(key) === key ? stage : t(key)} ${decimal(seconds.toFixed(1))} s`
+    })
   return parts.join(' · ')
 }

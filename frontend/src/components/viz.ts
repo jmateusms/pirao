@@ -19,6 +19,8 @@
  * where any two series can end up adjacent on screen.
  */
 
+import { decimal } from '../i18n'
+
 /** Categorical identity: chains, and any other "which one is this" encoding. */
 export const SERIES = [
   '#2a78d6', // blue
@@ -145,6 +147,6 @@ export const CONFIG = {
 export function fmt(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—'
   const abs = Math.abs(value)
-  if (abs !== 0 && (abs < 1e-3 || abs >= 1e6)) return value.toExponential(2)
-  return String(Number(value.toPrecision(4)))
+  if (abs !== 0 && (abs < 1e-3 || abs >= 1e6)) return decimal(value.toExponential(2))
+  return decimal(String(Number(value.toPrecision(4))))
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { api } from '../api/client'
 import type { RunState } from '../api/types'
+import { type Key, useI18n } from '../i18n'
 
 interface Props {
   run: RunState | null
@@ -16,16 +17,10 @@ interface Props {
  * matter of milliseconds, so a bar labelled "sampling" would sit at zero
  * through the entire wait and then jump to done.
  */
-const STAGES: { id: string; label: string }[] = [
-  { id: 'resolve', label: 'Checking the model' },
-  { id: 'render', label: 'Assembling the Stan program' },
-  { id: 'compile', label: 'Compiling' },
-  { id: 'sample', label: 'Sampling' },
-  { id: 'summarize', label: 'Summarising' },
-  { id: 'done', label: 'Finished' },
-]
+const STAGES = ['resolve', 'render', 'compile', 'sample', 'summarize', 'done'] as const
 
 export function RunPanel({ run, canRun, onStart, onFinished }: Props) {
+  const { t } = useI18n()
   const [live, setLive] = useState<RunState | null>(run)
 
   useEffect(() => setLive(run), [run])
@@ -62,21 +57,17 @@ export function RunPanel({ run, canRun, onStart, onFinished }: Props) {
     return (
       <div className="stack">
         <section className="card">
-          <h2>Run</h2>
-          <p className="muted">
-            {canRun
-              ? 'Everything checks out. Start when you are ready.'
-              : 'Fix the problems flagged on the Model and Data tabs first.'}
-          </p>
+          <h2>{t('run.title')}</h2>
+          <p className="muted">{t(canRun ? 'run.ready' : 'run.fixFirst')}</p>
           <button className="primary" disabled={!canRun} onClick={onStart}>
-            Run MCMC
+            {t('app.run')}
           </button>
         </section>
       </div>
     )
   }
 
-  const activeIndex = STAGES.findIndex((s) => s.id === live.stage)
+  const activeIndex = STAGES.findIndex((s) => s === live.stage)
   const finished = live.status === 'done'
   const failed = live.status === 'failed'
   const cancelled = live.status === 'cancelled'
@@ -85,10 +76,12 @@ export function RunPanel({ run, canRun, onStart, onFinished }: Props) {
     <div className="stack">
       <section className="card">
         <div className="card__head">
-          <h2>Run {live.id && <span className="pill">{live.id}</span>}</h2>
+          <h2>
+            {t('run.title')} {live.id && <span className="pill">{live.id}</span>}
+          </h2>
           {live.status === 'running' && (
             <button className="chip" onClick={() => api.cancelRun(live.id)}>
-              Cancel
+              {t('run.cancel')}
             </button>
           )}
         </div>
@@ -104,9 +97,9 @@ export function RunPanel({ run, canRun, onStart, onFinished }: Props) {
                     ? 'active'
                     : 'pending'
             return (
-              <li key={stage.id} className={`stage stage--${state}`}>
+              <li key={stage} className={`stage stage--${state}`}>
                 <span className="stage__mark" />
-                <span>{stage.label}</span>
+                <span>{t(`stage.${stage}` as Key)}</span>
               </li>
             )
           })}
@@ -131,13 +124,13 @@ export function RunPanel({ run, canRun, onStart, onFinished }: Props) {
 
         {failed && (
           <div className="banner banner--error">
-            <strong>The run did not finish.</strong>
+            <strong>{t('run.didNotFinish')}</strong>
             <p>{live.error}</p>
             {live.error_details.length > 0 && (
               <ul className="issues">
                 {live.error_details.map((detail, i) => (
                   <li key={i}>
-                    {detail.row !== null && <strong>Row {detail.row} </strong>}
+                    {detail.row !== null && <strong>{t('run.row', { n: detail.row })} </strong>}
                     {detail.column && <>· {detail.column} </>}
                     {detail.message}
                   </li>
@@ -148,7 +141,7 @@ export function RunPanel({ run, canRun, onStart, onFinished }: Props) {
         )}
 
         {cancelled && (
-          <div className="banner banner--warn">This run was cancelled.</div>
+          <div className="banner banner--warn">{t('run.cancelled')}</div>
         )}
 
         {live.warnings.map((warning) => (
@@ -160,7 +153,7 @@ export function RunPanel({ run, canRun, onStart, onFinished }: Props) {
         {(failed || cancelled) && (
           <div className="row">
             <button className="primary" disabled={!canRun} onClick={onStart}>
-              Run again
+              {t('run.again')}
             </button>
           </div>
         )}

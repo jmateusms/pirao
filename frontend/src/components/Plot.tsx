@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+import { plotSeparators, useI18n } from '../i18n'
 import { BASE_LAYOUT, CONFIG } from './viz'
 
 interface Props {
@@ -54,6 +55,7 @@ function merge(height: number, layout?: Record<string, unknown>) {
   const given = (layout ?? {}) as Record<string, Record<string, unknown>>
   return {
     ...BASE_LAYOUT,
+    separators: plotSeparators(),
     height,
     ...layout,
     xaxis: { ...base.xaxis, ...given.xaxis },
@@ -63,6 +65,8 @@ function merge(height: number, layout?: Record<string, unknown>) {
 
 export function Plot({ data, layout, config, height = 320, description }: Props) {
   const node = useRef<HTMLDivElement>(null)
+  // The decimal separator follows the language, so a switch must redraw.
+  const { lang, t } = useI18n()
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
@@ -82,7 +86,7 @@ export function Plot({ data, layout, config, height = 320, description }: Props)
     return () => {
       disposed = true
     }
-  }, [data, layout, config, height])
+  }, [data, layout, config, height, lang])
 
   // `responsive` only follows the window; the panes can also be resized by
   // dragging the splitter, so watch the element itself.
@@ -114,7 +118,7 @@ export function Plot({ data, layout, config, height = 320, description }: Props)
   }, [])
 
   if (failed) {
-    return <div className="placeholder">The plotting library failed to load.</div>
+    return <div className="placeholder">{t('plot.failed')}</div>
   }
   return (
     <div

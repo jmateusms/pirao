@@ -7,6 +7,7 @@
   "note": "Illustrative numbers. Four test campaigns of the relay K2 of the pressure-tank fault tree in faultree: 3 failures to open in 10,000 demands. Jeffreys prior Beta(0.5, 0.5), the usual non-informative choice for a probability per demand in risk analysis. Exact posterior: Beta(3.5, 9997.5), mean 3.5e-4, 90% interval 1.08e-4 to 7.03e-4. The draws of prob can go straight into faultree's uncertainty analysis as samples of K2.",
   "note_pt": "Números ilustrativos. Quatro campanhas de teste do relé K2 da árvore do tanque pressurizado do faultree: 3 falhas em abrir em 10.000 demandas. Priori de Jeffreys Beta(0,5; 0,5), a escolha não informativa usual para probabilidade por demanda em análise de risco. Posteriori exata: Beta(3,5; 9997,5), média 3,5e-4, intervalo de 90% de 1,08e-4 a 7,03e-4. As amostras de prob podem entrar direto na análise de incerteza do faultree como amostras de K2.",
   "source": "Illustrative data, made up for teaching; no real plant.",
+  "source_pt": "Dados ilustrativos, inventados para o ensino; nenhuma planta real.",
   "spec": {
     "likelihood": "binomial",
     "params": {

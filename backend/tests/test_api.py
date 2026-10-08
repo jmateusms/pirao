@@ -215,3 +215,14 @@ def test_examples_are_listed_and_served():
     assert first["spec"]["likelihood"] == listing[0]["likelihood"]
     assert first["rows"] and first["sampler"]["seed"] is not None
     assert client.get("/api/examples/no-such-example").status_code == 404
+
+
+def test_meta_speaks_portuguese_on_request():
+    english = client.get("/api/meta").json()
+    portuguese = client.get("/api/meta", params={"lang": "pt"}).json()
+    assert english["likelihoods"][1]["parameters"][0]["label"] == "shape"
+    assert portuguese["likelihoods"][1]["parameters"][0]["label"] == "forma"
+    # Ids, names and numbers are the contract and never change with language.
+    assert [p["id"] for p in english["priors"]] == [
+        p["id"] for p in portuguese["priors"]
+    ]

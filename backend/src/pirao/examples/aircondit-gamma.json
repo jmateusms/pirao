@@ -7,6 +7,7 @@
   "note": "The same 12 intervals with a gamma likelihood, which contains the exponential as shape = 1. The prior on shape is lognormal with median 1 (the exponential), so the data decide whether the hazard decreases (shape < 1) or increases. The maximum likelihood shape is 0.71, but the 90% interval reaches past 1: twelve failures cannot rule the exponential out.",
   "note_pt": "Os mesmos 12 intervalos com verossimilhança gama, que contém a exponencial como forma = 1. A priori da forma é lognormal com mediana 1 (a exponencial), e os dados decidem se a taxa de falha cai (forma < 1) ou cresce. A forma de máxima verossimilhança é 0,71, mas o intervalo de 90% passa de 1: doze falhas não descartam a exponencial.",
   "source": "Proschan, F. (1963). Theoretical explanation of observed decreasing failure rate. Technometrics 5(3), 375-383. The 12 intervals are the `aircondit` data of Davison and Hinkley (1997), Bootstrap Methods and their Application (R package boot).",
+  "source_pt": "Proschan, F. (1963). Theoretical explanation of observed decreasing failure rate. Technometrics 5(3), 375-383. Os 12 intervalos são os dados `aircondit` de Davison e Hinkley (1997), Bootstrap Methods and their Application (pacote R boot).",
   "spec": {
     "likelihood": "gamma",
     "params": {

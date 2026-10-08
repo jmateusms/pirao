@@ -13,6 +13,7 @@
 
 import { useMemo } from 'react'
 
+import { useI18n } from '../i18n'
 import { Plot } from './Plot'
 import { BLUE, BLUE_WASH } from './viz'
 
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function PriorCurve({ x, pdf, q05, q95, height = 108 }: Props) {
+  const { t } = useI18n()
   const data = useMemo(() => {
     const y = pdf.map((value) => (Number.isFinite(value) ? value : 0))
     const traces: unknown[] = [
@@ -37,7 +39,7 @@ export function PriorCurve({ x, pdf, q05, q95, height = 108 }: Props) {
         fill: 'tozeroy',
         fillcolor: BLUE_WASH,
         line: { color: BLUE, width: 2, shape: 'spline', smoothing: 0.4 },
-        hovertemplate: '%{x:.4g}<br>density %{y:.3g}<extra></extra>',
+        hovertemplate: `%{x:.4g}<br>${t('marg.density')} %{y:.3g}<extra></extra>`,
       },
     ]
 
@@ -61,7 +63,7 @@ export function PriorCurve({ x, pdf, q05, q95, height = 108 }: Props) {
       }
     }
     return traces
-  }, [x, pdf, q05, q95])
+  }, [x, pdf, q05, q95, t])
 
   const layout = useMemo(
     () => ({
@@ -75,7 +77,7 @@ export function PriorCurve({ x, pdf, q05, q95, height = 108 }: Props) {
 
   const config = useMemo(() => ({ displayModeBar: false }), [])
 
-  if (x.length < 2) return <div className="placeholder">No preview</div>
+  if (x.length < 2) return <div className="placeholder">{t('model.noPreview')}</div>
 
   return (
     <Plot
@@ -83,7 +85,7 @@ export function PriorCurve({ x, pdf, q05, q95, height = 108 }: Props) {
       layout={layout}
       config={config}
       height={height}
-      description="Prior density, after the bounds have been applied"
+      description={t('pp.priorShort')}
     />
   )
 }

@@ -26,6 +26,7 @@ LISTING_FIELDS = (
     "note",
     "note_pt",
     "source",
+    "source_pt",
     "data_kind",
 )
 

@@ -7,6 +7,7 @@
   "note": "Hours between 12 successive failures of the air-conditioning system of one Boeing 720 (Proschan 1963). Exponential likelihood with a Gamma(1, 100) prior on the rate, which is conjugate: the exact posterior is Gamma(13, 1397), mean 9.31e-3 per h, 90% interval 5.50e-3 to 1.39e-2, and R(24 h) = 0.801, R(100 h) = 0.407. Compare the table with these numbers.",
   "note_pt": "Horas entre 12 falhas sucessivas do ar-condicionado de um Boeing 720 (Proschan 1963). Verossimilhança exponencial com priori Gama(1, 100) na taxa, que é conjugada: a posteriori exata é Gama(13, 1397), média 9,31e-3 por h, intervalo de 90% de 5,50e-3 a 1,39e-2, e R(24 h) = 0,801, R(100 h) = 0,407. Confira a tabela com esses números.",
   "source": "Proschan, F. (1963). Theoretical explanation of observed decreasing failure rate. Technometrics 5(3), 375-383. The 12 intervals are the `aircondit` data of Davison and Hinkley (1997), Bootstrap Methods and their Application (R package boot).",
+  "source_pt": "Proschan, F. (1963). Theoretical explanation of observed decreasing failure rate. Technometrics 5(3), 375-383. Os 12 intervalos são os dados `aircondit` de Davison e Hinkley (1997), Bootstrap Methods and their Application (pacote R boot).",
   "spec": {
     "likelihood": "exponential",
     "params": {

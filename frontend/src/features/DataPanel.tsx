@@ -12,6 +12,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client'
 import type { CellError, LikelihoodMeta, Row } from '../api/types'
 
+import { rich, useI18n } from '../i18n'
+
 interface Props {
   likelihood: LikelihoodMeta
   rows: Row[]
@@ -54,6 +56,7 @@ export function DataPanel({
   warnings,
   onChangeRows,
 }: Props) {
+  const { t } = useI18n()
   const fileInput = useRef<HTMLInputElement>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const names = useMemo(() => columnsFor(likelihood), [likelihood])
@@ -198,24 +201,24 @@ export function DataPanel({
     <div className="stack">
       <section className="card">
         <div className="card__head">
-          <h2>Data</h2>
+          <h2>{t('data.title')}</h2>
           <div className="row">
             <a
               className="chip"
               href={api.templateUrl(likelihood.id, 'csv')}
               download
             >
-              Template (CSV)
+              {t('data.templateCsv')}
             </a>
             <a
               className="chip"
               href={api.templateUrl(likelihood.id, 'xlsx')}
               download
             >
-              Template (Excel)
+              {t('data.templateXlsx')}
             </a>
             <button className="chip" onClick={() => fileInput.current?.click()}>
-              Upload…
+              {t('data.upload')}
             </button>
             <input
               ref={fileInput}
@@ -231,10 +234,11 @@ export function DataPanel({
           </div>
         </div>
         <p className="muted">
-          One row per unit. <code>failure = 1</code> means the unit failed;{' '}
-          <code>0</code> means it survived and the row is censored.{' '}
-          <code>relevance</code> is optional and defaults to 1. You can paste a
-          block straight from Excel.
+          {rich(t('data.intro'), {
+            failure1: <code>failure = 1</code>,
+            zero: <code>0</code>,
+            relevance: <code>relevance</code>,
+          })}
         </p>
 
         {uploadError && <div className="banner banner--error">{uploadError}</div>}
@@ -254,7 +258,7 @@ export function DataPanel({
             getCellsForSelection={true}
             rowMarkers="number"
             smoothScrollY
-            trailingRowOptions={{ hint: 'New row…', sticky: true }}
+            trailingRowOptions={{ hint: t('data.newRow'), sticky: true }}
             onRowAppended={() => {
               onChangeRows([...rows, emptyRow(names)])
             }}
@@ -264,7 +268,7 @@ export function DataPanel({
             className="grid-resize"
             role="separator"
             aria-orientation="horizontal"
-            aria-label="Resize the table"
+            aria-label={t('data.resize')}
             tabIndex={0}
             style={{ touchAction: 'none' }}
             onPointerDown={(e) => {
@@ -297,28 +301,28 @@ export function DataPanel({
 
         <div className="row row--between">
           <span className="muted small">
-            {rows.length} row{rows.length === 1 ? '' : 's'}
+            {rows.length === 1 ? t('data.row1') : t('data.rows', { n: rows.length })}
           </span>
           <div className="row">
             <button
               className="chip"
               onClick={() => onChangeRows([...rows, emptyRow(names)])}
             >
-              Add row
+              {t('data.addRow')}
             </button>
             <button
               className="chip"
               disabled={rows.length === 0}
               onClick={() => onChangeRows(rows.slice(0, -1))}
             >
-              Remove last
+              {t('data.removeLast')}
             </button>
             <button
               className="chip"
               disabled={rows.length === 0}
               onClick={() => onChangeRows([])}
             >
-              Clear
+              {t('data.clear')}
             </button>
           </div>
         </div>
@@ -326,13 +330,13 @@ export function DataPanel({
 
       {errors.filter((e) => e.row !== null).length > 0 && (
         <section className="card card--error">
-          <h3>Problems to fix</h3>
+          <h3>{t('data.problems')}</h3>
           <ul className="issues">
             {errors
               .filter((e) => e.row !== null)
               .map((e, i) => (
                 <li key={i}>
-                  <strong>Row {e.row}</strong>
+                  <strong>{t('data.row', { n: e.row ?? '' })}</strong>
                   {e.column ? ` · ${e.column}` : ''} — {e.message}
                 </li>
               ))}

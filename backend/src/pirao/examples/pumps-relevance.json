@@ -7,6 +7,7 @@
   "note": "Illustrative numbers. Times to failure of the pumps of a pumping station (A, relevance 1) plus records from a similar station (B, relevance 0.5); failure = 0 rows are pumps still running, and the 11 rows count as 8 effective observations. The prior on the rate is the kind a generic database gives: lognormal with median 1e-3 per h and error factor 5 (sigma = ln 5 / 1.645 = 0.98). The posterior mean time to failure, about 750 h (median 680 h), sits between the weighted data alone (about 610 h) and the prior's 1000 h.",
   "note_pt": "Números ilustrativos. Tempos até a falha das bombas de uma estação (A, relevância 1) e registros de uma estação parecida (B, relevância 0,5); linhas com failure = 0 são bombas ainda operando, e as 11 linhas valem 8 observações efetivas. A priori na taxa é do tipo que um banco de dados genérico fornece: lognormal com mediana 1e-3 por h e fator de erro 5 (sigma = ln 5 / 1,645 = 0,98). O tempo médio até a falha a posteriori, cerca de 750 h (mediana 680 h), fica entre os dados ponderados sozinhos (cerca de 610 h) e as 1000 h da priori.",
   "source": "Illustrative data, made up for teaching; no real plant.",
+  "source_pt": "Dados ilustrativos, inventados para o ensino; nenhuma planta real.",
   "spec": {
     "likelihood": "exponential",
     "params": {
