@@ -13,6 +13,8 @@ draws, and plots.
 The point is the decoupling: the three models this grew out of each had one
 hard-coded prior. Here the prior is a choice, and the tool takes responsibility
 for telling you what that choice actually means once your bounds are applied.
+[`docs/design.md`](docs/design.md) records why it is built this way, with the
+evidence for each decision.
 
 ## Run it
 
