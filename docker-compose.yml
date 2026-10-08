@@ -10,7 +10,9 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      # Loopback only: the app has no login, so it should not be reachable
+      # from the rest of the network.
+      - "127.0.0.1:8080:80"
     depends_on:
       - backend
 

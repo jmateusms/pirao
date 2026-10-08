@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -54,12 +53,11 @@ app = FastAPI(
     version=__version__,
     description="Modular Bayesian reliability MCMC builder",
 )
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# No CORS middleware, deliberately.  Every way of running pirão serves the web
+# app and the API from one origin (`pirao gui`, nginx in Docker, the Vite proxy
+# in development), so nothing needs cross-origin access -- and allowing it
+# would let any page open in the same browser read the runs and download their
+# bundles, data included.
 
 jobs = JobManager(RUNS_ROOT)
 
