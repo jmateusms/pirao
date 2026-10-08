@@ -46,7 +46,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  meta: () => request<Meta>('/meta'),
+  meta: (lang: 'pt' | 'en' = 'en') => request<Meta>(`/meta?lang=${lang}`),
 
   health: () =>
     request<{ ok: boolean; version?: string; error?: string; hint?: string }>(

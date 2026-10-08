@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+import { decimal, useI18n } from '../i18n'
+
 interface Props {
   value: number | null
   onChange: (value: number | null) => void
@@ -24,7 +26,7 @@ interface Props {
 const COMPLETE_NUMBER = /^-?(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?$/
 
 function format(value: number | null): string {
-  return value === null || value === undefined ? '' : String(value)
+  return value === null || value === undefined ? '' : decimal(String(value))
 }
 
 /**
@@ -53,6 +55,13 @@ export function NumberField({
   ariaLabel,
 }: Props) {
   const [buffer, setBuffer] = useState(() => format(value))
+  const { lang } = useI18n()
+
+  // A language switch changes the decimal mark, so show the value again.
+  useEffect(() => {
+    setBuffer(format(value))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
 
   // Re-sync only when `value` itself changes and disagrees with what's on
   // screen -- an external change such as switching prior family or clicking
@@ -95,7 +104,7 @@ export function NumberField({
         let next = integer ? Math.round(parsed) : parsed
         if (min !== undefined) next = Math.max(min, next)
         if (max !== undefined) next = Math.min(max, next)
-        setBuffer(String(next))
+        setBuffer(format(next))
         onChange(next)
       }}
     />

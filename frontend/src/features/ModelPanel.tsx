@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type {
   LikelihoodMeta,
@@ -10,6 +10,7 @@ import type {
 } from '../api/types'
 import { NumberField } from '../components/NumberField'
 import { PriorCurve } from '../components/PriorCurve'
+import { decimal, type Lang, useI18n } from '../i18n'
 import { compatibleFamilies, defaultHyper, formatBound } from './defaults'
 
 interface Props {
@@ -29,6 +30,7 @@ export function ModelPanel({
   onChangeLikelihood,
   onChangeSpec,
 }: Props) {
+  const { t, lang } = useI18n()
   const [showSource, setShowSource] = useState(false)
 
   const patchParam = (name: string, patch: Partial<ModelSpec['params'][string]>) => {
@@ -44,10 +46,8 @@ export function ModelPanel({
   return (
     <div className="stack">
       <section className="card">
-        <h2>Likelihood</h2>
-        <p className="muted">
-          What kind of observation each row of your data represents.
-        </p>
+        <h2>{t('model.likelihood')}</h2>
+        <p className="muted">{t('model.likelihoodIntro')}</p>
         <select
           className="control control--wide"
           value={likelihood.id}
@@ -64,29 +64,18 @@ export function ModelPanel({
         <div className="row row--wrap">
           {likelihood.mission === 'time' ? (
             <label className="field">
-              <span>Mission time(s)</span>
-              <input
-                className="control"
-                value={(spec.mission_times ?? []).join(', ')}
-                placeholder="e.g. 100, 500, 1000"
-                onChange={(e) =>
-                  onChangeSpec({
-                    ...spec,
-                    mission_times: e.target.value
-                      .split(',')
-                      .map((v) => Number(v.trim()))
-                      .filter((v) => Number.isFinite(v)),
-                  })
-                }
+              <span>{t('model.missionTimes')}</span>
+              <MissionTimesField
+                lang={lang}
+                value={spec.mission_times ?? []}
+                placeholder={t('model.missionTimesPlaceholder')}
+                onChange={(times) => onChangeSpec({ ...spec, mission_times: times })}
               />
-              <small>
-                Reliability is reported at each of these. Give several to get a
-                curve.
-              </small>
+              <small>{t('model.missionTimesHelp')}</small>
             </label>
           ) : (
             <label className="field">
-              <span>Mission demands</span>
+              <span>{t('model.missionDemands')}</span>
               <NumberField
                 className="control"
                 integer
@@ -94,37 +83,33 @@ export function ModelPanel({
                 value={spec.mission_demands ?? 1}
                 onChange={(value) => onChangeSpec({ ...spec, mission_demands: value })}
               />
-              <small>How many demands the unit must survive.</small>
+              <small>{t('model.missionDemandsHelp')}</small>
             </label>
           )}
 
           <label className="field">
-            <span>Time unit</span>
+            <span>{t('model.timeUnit')}</span>
             <input
               className="control control--narrow"
               value={spec.time_unit ?? 'h'}
               onChange={(e) => onChangeSpec({ ...spec, time_unit: e.target.value })}
             />
-            <small>
-              Printed on every plot and export. It matters: weighting by
-              relevance is not invariant to the unit.
-            </small>
+            <small>{t('model.timeUnitHelp')}</small>
           </label>
 
           <label className="field">
-            <span>Curve runs to</span>
+            <span>{t('model.curveTo')}</span>
             <NumberField
               className="control control--narrow"
               nullable
-              placeholder="auto"
+              placeholder={t('model.auto')}
               value={spec.curve_horizon ?? null}
               onChange={(v) => onChangeSpec({ ...spec, curve_horizon: v })}
             />
             <small>
-              Where the reliability curve stops, in{' '}
-              {likelihood.mission === 'time' ? (spec.time_unit ?? 'h') : 'demands'}
-              . Leave empty for 1.3 × the mission, which shows where the
-              estimate is heading without implying the extrapolation is data.
+              {t('model.curveToHelp', {
+                unit: likelihood.mission === 'time' ? (spec.time_unit ?? 'h') : t('model.demands'),
+              })}
             </small>
           </label>
 
@@ -134,18 +119,15 @@ export function ModelPanel({
               checked={spec.prior_only ?? false}
               onChange={(e) => onChangeSpec({ ...spec, prior_only: e.target.checked })}
             />
-            <span>Ignore the data (sample the prior only)</span>
-            <small>
-              Fits the prior alone, so you can see what it implies before the
-              data has any say.
-            </small>
+            <span>{t('model.priorOnly')}</span>
+            <small>{t('model.priorOnlyHelp')}</small>
           </label>
         </div>
       </section>
 
       {validation && !validation.ok && (
         <div className="banner banner--error">
-          <strong>This model cannot be fitted yet.</strong>
+          <strong>{t('model.cannotFit')}</strong>
           <ul>
             {validation.errors.map((e) => (
               <li key={e}>{e}</li>
@@ -168,7 +150,7 @@ export function ModelPanel({
       {validation?.stan_source && (
         <section className="card">
           <button className="link" onClick={() => setShowSource((v) => !v)}>
-            {showSource ? 'Hide' : 'Show'} the generated Stan program
+            {t(showSource ? 'model.hideSource' : 'model.showSource')}
           </button>
           {showSource && (
             <pre className="source">{validation.stan_source}</pre>
@@ -188,6 +170,7 @@ interface ParamProps {
 }
 
 function ParameterCard({ meta, param, spec, resolved, onPatch }: ParamProps) {
+  const { t } = useI18n()
   const current = spec.params[param.name]
   const families = compatibleFamilies(meta.priors, param)
   const family = meta.priors.find((p) => p.id === current.prior.family)
@@ -207,7 +190,7 @@ function ParameterCard({ meta, param, spec, resolved, onPatch }: ParamProps) {
       <div className="param">
         <div className="param__controls">
           <label className="field">
-            <span>Prior</span>
+            <span>{t('model.prior')}</span>
             <select
               className="control"
               value={current.prior.family}
@@ -248,21 +231,21 @@ function ParameterCard({ meta, param, spec, resolved, onPatch }: ParamProps) {
           ))}
 
           <label className="field">
-            <span>Lower bound</span>
+            <span>{t('model.lower')}</span>
             <NumberField
               className="control control--narrow"
               nullable
-              placeholder="none"
+              placeholder={t('model.none')}
               value={current.lower}
               onChange={(value) => onPatch({ lower: value })}
             />
           </label>
           <label className="field">
-            <span>Upper bound</span>
+            <span>{t('model.upper')}</span>
             <NumberField
               className="control control--narrow"
               nullable
-              placeholder="none"
+              placeholder={t('model.none')}
               value={current.upper}
               onChange={(value) => onPatch({ upper: value })}
             />
@@ -270,7 +253,7 @@ function ParameterCard({ meta, param, spec, resolved, onPatch }: ParamProps) {
 
           {param.presets.length > 0 && (
             <div className="field">
-              <span>Presets</span>
+              <span>{t('model.presets')}</span>
               <div className="row">
                 {param.presets.map((preset) => (
                   <button
@@ -302,11 +285,11 @@ function ParameterCard({ meta, param, spec, resolved, onPatch }: ParamProps) {
               />
               <dl className="stats">
                 <div>
-                  <dt>median</dt>
+                  <dt>{t('model.median')}</dt>
                   <dd>{fmt(preview.median)}</dd>
                 </div>
                 <div>
-                  <dt>90% interval</dt>
+                  <dt>{t('model.interval90')}</dt>
                   <dd>
                     {fmt(preview.q05)} – {fmt(preview.q95)}
                   </dd>
@@ -314,18 +297,18 @@ function ParameterCard({ meta, param, spec, resolved, onPatch }: ParamProps) {
               </dl>
             </>
           ) : (
-            <div className="placeholder">No preview available</div>
+            <div className="placeholder">{t('model.noPreview')}</div>
           )}
 
           {resolved && (
             <p className="muted small">
-              In force:{' '}
+              {t('model.inForce')}{' '}
               <strong>
-                {formatBound(resolved.effective_lower, '−∞')} to{' '}
+                {formatBound(resolved.effective_lower, '−∞')} {t('model.to')}{' '}
                 {formatBound(resolved.effective_upper, '+∞')}
               </strong>
               {mass !== null && mass !== undefined && (
-                <> · keeps {(mass * 100).toFixed(1)}% of the prior</>
+                <> · {t('model.keeps', { pct: decimal((mass * 100).toFixed(1)) })}</>
               )}
             </p>
           )}
@@ -338,7 +321,16 @@ function ParameterCard({ meta, param, spec, resolved, onPatch }: ParamProps) {
         lognormal on a [0,1] parameter quietly lost half its mass.
       */}
       {preview?.warning && (
-        <div className="banner banner--warn">{preview.warning}</div>
+        <div className="banner banner--warn">
+          {/* The truncation warning is the common one and is rebuilt here, in
+              the reader's language; any other comes from the server as is. */}
+          {mass !== null && mass !== undefined && mass < 0.99
+            ? t('model.massWarning', {
+                pct: decimal((mass * 100).toFixed(1)),
+                family: family?.label ?? '',
+              })
+            : preview.warning}
+        </div>
       )}
       {family?.notes && <p className="muted small">{family.notes}</p>}
     </section>
@@ -348,6 +340,65 @@ function ParameterCard({ meta, param, spec, resolved, onPatch }: ParamProps) {
 function fmt(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—'
   const abs = Math.abs(value)
-  if (abs !== 0 && (abs < 1e-3 || abs >= 1e5)) return value.toExponential(2)
-  return String(Number(value.toPrecision(4)))
+  if (abs !== 0 && (abs < 1e-3 || abs >= 1e5)) return decimal(value.toExponential(2))
+  return decimal(String(Number(value.toPrecision(4))))
+}
+
+/**
+ * Mission times as typed text.
+ *
+ * Kept as a buffer and committed when it parses, as NumberField does: parsing
+ * on every keystroke would turn "100," into "100, 0" before the next digit
+ * arrives.  English separates with commas; Portuguese, whose decimal mark is
+ * the comma, separates with semicolons.
+ */
+function MissionTimesField({
+  lang,
+  value,
+  placeholder,
+  onChange,
+}: {
+  lang: Lang
+  value: number[]
+  placeholder: string
+  onChange: (times: number[]) => void
+}) {
+  const show = (times: number[]) =>
+    times.map((v) => decimal(String(v))).join(lang === 'pt' ? '; ' : ', ')
+  const [buffer, setBuffer] = useState(() => show(value))
+
+  const parse = (text: string): number[] | null => {
+    const parts = text
+      .split(lang === 'pt' ? ';' : /[,;]/)
+      .map((part) => part.trim())
+      .filter((part) => part !== '')
+    const numbers = parts.map((part) => Number(lang === 'pt' ? part.replace(',', '.') : part))
+    return numbers.every((n) => Number.isFinite(n) && n >= 0) ? numbers : null
+  }
+
+  // Follow outside changes (an example loaded, the language switched), but
+  // leave a half-typed buffer alone while it still means the same numbers.
+  useEffect(() => {
+    const parsed = parse(buffer)
+    if (!parsed || parsed.join() !== value.join()) setBuffer(show(value))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+  useEffect(() => {
+    setBuffer(show(value))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
+
+  return (
+    <input
+      className="control"
+      value={buffer}
+      placeholder={placeholder}
+      onChange={(e) => {
+        setBuffer(e.target.value)
+        const parsed = parse(e.target.value)
+        if (parsed) onChange(parsed)
+      }}
+      onBlur={() => setBuffer(show(value))}
+    />
+  )
 }

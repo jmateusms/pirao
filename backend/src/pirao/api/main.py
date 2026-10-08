@@ -42,6 +42,7 @@ from ..core.registry_likelihoods import LIKELIHOODS
 from ..core.registry_priors import PRIORS
 from ..core.resolve import SpecError, resolve
 from ..core.spec import SAMPLER_HELP, ModelSpec, RunRequest
+from ..locales import translate
 
 RUNS_ROOT = Path(
     __import__("os").environ.get("PIRAO_RUNS_DIR")
@@ -75,12 +76,17 @@ def _json_number(value: float | None) -> float | None:
 
 
 @app.get("/api/meta")
-def get_meta() -> dict[str, Any]:
+def get_meta(lang: str = "en") -> dict[str, Any]:
+    """The registries, with their labels and help in ``lang`` (en or pt)."""
+
+    def tr(text: str) -> str:
+        return translate(text, lang)
+
     likelihoods = [
         {
             "id": lik.id,
-            "label": lik.label,
-            "description": lik.description,
+            "label": tr(lik.label),
+            "description": tr(lik.description),
             "mission": lik.mission,
             "required_columns": list(lik.required_columns),
             "optional_columns": list(OPTIONAL_COLUMNS),
@@ -88,12 +94,12 @@ def get_meta() -> dict[str, Any]:
                 {
                     "name": p.name,
                     "role": p.role,
-                    "label": p.display_label,
-                    "description": p.description,
+                    "label": tr(p.display_label),
+                    "description": tr(p.description),
                     "natural_lower": _json_number(p.nat_lo),
                     "natural_upper": _json_number(p.nat_hi),
                     "presets": [
-                        {"label": label, "lower": lo, "upper": hi}
+                        {"label": tr(label), "lower": lo, "upper": hi}
                         for label, lo, hi in p.presets
                     ],
                 }
@@ -106,8 +112,8 @@ def get_meta() -> dict[str, Any]:
     priors = [
         {
             "id": f.id,
-            "label": f.label,
-            "notes": f.notes,
+            "label": tr(f.label),
+            "notes": tr(f.notes),
             "is_proper": f.is_proper,
             "support_lower": _json_number(f.supp_lo),
             "support_upper": _json_number(f.supp_hi),
@@ -115,7 +121,7 @@ def get_meta() -> dict[str, Any]:
             "hyperparameters": [
                 {
                     "name": h.name,
-                    "label": h.label,
+                    "label": tr(h.label),
                     "default": h.default,
                     "minimum": _json_number(h.lo),
                     "maximum": _json_number(h.hi),
@@ -130,7 +136,7 @@ def get_meta() -> dict[str, Any]:
     return {
         "likelihoods": likelihoods,
         "priors": priors,
-        "sampler_help": SAMPLER_HELP,
+        "sampler_help": {key: tr(text) for key, text in SAMPLER_HELP.items()},
         "columns": {
             "all": list(ALL_COLUMNS),
             "optional": list(OPTIONAL_COLUMNS),

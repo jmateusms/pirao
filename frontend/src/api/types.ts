@@ -227,6 +227,8 @@ export interface PriorPosterior {
   /** Truncated, renormalised prior on the same grid; null where infinite. */
   prior: (number | null)[] | null
   prior_label: string
+  /** The family id, so the label can be shown in the reader's language. */
+  prior_family?: string
 }
 
 export type RunStatus = 'queued' | 'running' | 'done' | 'failed' | 'cancelled'
@@ -268,6 +270,7 @@ export interface ExampleSummary {
   note: string
   note_pt: string
   source: string
+  source_pt: string
   /** "public": a published data set; "illustrative": numbers made up for teaching. */
   data_kind: 'public' | 'illustrative'
   likelihood: string

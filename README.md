@@ -50,6 +50,11 @@ The API and the built web app are served together on 127.0.0.1. Without
 `--port`, 8765 is tried first and any free port is used if it is taken, the
 same convention as the two sibling tools.
 
+The interface speaks Portuguese and English (**PT | EN** in the top bar, as in
+farofa and faultree). It follows the browser's language, defaults to
+Portuguese, and in Portuguese writes numbers with a decimal comma and separates
+mission times with semicolons.
+
 ## Examples
 
 The **Examples…** menu in the top bar (or `?example=<id>` in the URL, handy for

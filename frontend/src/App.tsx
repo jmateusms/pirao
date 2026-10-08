@@ -19,6 +19,7 @@ import { RunPanel } from './features/RunPanel'
 import { SamplerPanel } from './features/SamplerPanel'
 import { defaultSpecFor } from './features/defaults'
 import { ExampleNote } from './features/ExampleNote'
+import { type Key, type Lang, useI18n } from './i18n'
 
 /** The inputs live in the side panel; the run and its results fill the rest. */
 const TABS = ['Model', 'Data', 'Sampler'] as const
@@ -61,6 +62,7 @@ export function App() {
     hint?: string
   } | null>(null)
 
+  const { t, lang, setLang } = useI18n()
   const [tab, setTab] = useState<Tab>('Model')
   const [spec, setSpec] = useState<ModelSpec | null>(null)
   const [rows, setRows] = useState<Row[]>([])
@@ -109,9 +111,9 @@ export function App() {
       url.searchParams.set('example', id)
       window.history.replaceState(null, '', url)
     } catch (e) {
-      setFatal(`Could not load the example ${id}: ${String(e)}`)
+      setFatal(t('app.exampleFailed', { id, error: String(e) }))
     }
-  }, [])
+  }, [t])
 
   const clearExample = useCallback(() => {
     setExample(null)
@@ -120,14 +122,20 @@ export function App() {
     window.history.replaceState(null, '', url)
   }, [])
 
+  // The registry's labels and help come back in the chosen language.  The
+  // spec is only seeded the first time -- and only if an example has not
+  // already filled it in while the catalogue was loading.
   useEffect(() => {
     api
-      .meta()
+      .meta(lang)
       .then((m) => {
         setMeta(m)
-        setSpec(defaultSpecFor(m, m.likelihoods[0].id))
+        setSpec((current) => current ?? defaultSpecFor(m, m.likelihoods[0].id))
       })
       .catch((e) => setFatal(String(e)))
+  }, [lang])
+
+  useEffect(() => {
     api.health().then(setToolchain).catch(() => setToolchain(null))
     api
       .examples()
@@ -214,7 +222,7 @@ export function App() {
         id: '',
         status: 'failed',
         stage: 'resolve',
-        message: 'Could not start',
+        message: t('app.couldNotStart'),
         fraction: null,
         error: e instanceof Error ? e.message : String(e),
         error_details: [],
@@ -222,17 +230,15 @@ export function App() {
         created_utc: '',
       })
     }
-  }, [spec, rows, sampler, validation])
+  }, [spec, rows, sampler, validation, t])
 
   if (fatal) {
     return (
       <div className="app app--message">
         <div className="banner banner--error">
-          <strong>The backend is unreachable.</strong> {fatal}
+          <strong>{t('app.unreachable')}</strong> {fatal}
           <div className="muted">
-            Start it with <code>pirao gui</code>, or{' '}
-            <code>uvicorn pirao.api.main:app --port 8000</code> behind the dev
-            server.
+            {t('app.startWith')} <code>pirao gui</code>.
           </div>
         </div>
       </div>
@@ -240,7 +246,7 @@ export function App() {
   }
 
   if (!meta || !spec || !likelihood) {
-    return <div className="app app--message app--loading">Loading…</div>
+    return <div className="app app--message app--loading">{t('app.loading')}</div>
   }
 
   const specOk = validation?.ok ?? false
@@ -257,26 +263,32 @@ export function App() {
           </svg>
           <div>
             <div className="brand__name">pirão</div>
-            <div className="brand__sub">
-              <b>P</b>robabilistic <b>I</b>nference for <b>R</b>eliability <b>A</b>nalysis
-              from <b>O</b>bserved data
+            <div className="brand__sub" title={t('app.sub')}>
+              {lang === 'en' ? (
+                <>
+                  <b>P</b>robabilistic <b>I</b>nference for <b>R</b>eliability{' '}
+                  <b>A</b>nalysis from <b>O</b>bserved data
+                </>
+              ) : (
+                t('app.sub')
+              )}
             </div>
           </div>
         </div>
         {examples.length > 0 && (
           <select
             className="control topbar__examples"
-            aria-label="Load a ready-made example"
+            aria-label={t('app.examplesAria')}
             value={example?.id ?? ''}
             onChange={(e) => {
               if (e.target.value) void loadExample(e.target.value)
               else clearExample()
             }}
           >
-            <option value="">Examples…</option>
+            <option value="">{t('app.examples')}</option>
             {examples.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.title}
+                {lang === 'pt' ? item.title_pt : item.title}
               </option>
             ))}
           </select>
@@ -285,13 +297,25 @@ export function App() {
         {toolchain?.version && (
           <span className="topbar__version">pirão {toolchain.version}</span>
         )}
+        <div className="seg" role="group" aria-label={t('app.lang')}>
+          {(['pt', 'en'] as Lang[]).map((code) => (
+            <button
+              key={code}
+              className={`seg__option${lang === code ? ' seg__option--on' : ''}`}
+              aria-pressed={lang === code}
+              onClick={() => setLang(code)}
+            >
+              {code.toUpperCase()}
+            </button>
+          ))}
+        </div>
         <button className="primary" disabled={!canRun} onClick={startRun}>
-          Run MCMC
+          {t('app.run')}
         </button>
       </header>
 
       <div className="layout" style={{ gridTemplateColumns: `${sideWidth}px 6px minmax(0, 1fr)` }}>
-        <aside className="side" aria-label="Model, data and sampler">
+        <aside className="side" aria-label={t('app.sideAria')}>
           <nav className="tabs side__tabs" role="tablist">
             {TABS.map((name) => {
               const problems =
@@ -306,11 +330,11 @@ export function App() {
                   }`}
                   onClick={() => setTab(name)}
                 >
-                  {name}
+                  {t(`tab.${name}` as Key)}
                   {name === 'Data' && rows.length > 0 && (
                     <span className="tab__count">{rows.length}</span>
                   )}
-                  {problems && <span className="tab__dot" aria-label="has problems" />}
+                  {problems && <span className="tab__dot" aria-label={t('app.hasProblems')} />}
                 </button>
               )
             })}
@@ -350,7 +374,7 @@ export function App() {
           className="splitter"
           role="separator"
           aria-orientation="vertical"
-          aria-label="Resize the side panel"
+          aria-label={t('app.resizeSide')}
           aria-valuenow={sideWidth}
           tabIndex={0}
           onPointerDown={(e) => {
@@ -382,7 +406,7 @@ export function App() {
         <main className="main">
           {toolchain && !toolchain.ok && (
             <div className="banner banner--error">
-              <strong>Stan is not installed.</strong> {toolchain.error}
+              <strong>{t('app.noStan')}</strong> {toolchain.error}
               {toolchain.hint && <div className="muted">{toolchain.hint}</div>}
             </div>
           )}
@@ -394,26 +418,21 @@ export function App() {
               run={run}
               spec={runSpec ?? spec}
               validation={runValidation}
+              priorLabels={Object.fromEntries(meta.priors.map((p) => [p.id, p.label]))}
             />
           ) : run ? (
             <RunPanel run={run} canRun={canRun} onStart={startRun} onFinished={setRun} />
           ) : (
             <section className="card ready">
-              <h2>Ready when you are</h2>
-              <p className="muted">
-                Set up the model, the data and the sampler on the left, or pick a
-                ready-made analysis from <strong>Examples</strong>. The results
-                appear here: reliability over time first, then what the data
-                changed in each parameter.
-              </p>
+              <h2>{t('ready.title')}</h2>
+              <p className="muted">{t('ready.body')}</p>
               {!canRun && (
                 <p className="muted small">
-                  Fix the problems marked on the {!specOk ? 'Model' : 'Data'} tab
-                  first.
+                  {t('ready.fixFirst', { tab: t(!specOk ? 'tab.Model' : 'tab.Data') })}
                 </p>
               )}
               <button className="primary" disabled={!canRun} onClick={startRun}>
-                Run MCMC
+                {t('app.run')}
               </button>
             </section>
           )}

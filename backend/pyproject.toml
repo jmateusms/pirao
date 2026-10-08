@@ -19,7 +19,9 @@ dependencies = [
     "numpy>=1.26",
     "pandas>=2.1",
     "scipy>=1.11",
-    "arviz>=0.17",
+    # ArviZ 1.0 reorganised summary() (hdi_prob, stat_focus, column names);
+    # results.py is written against 0.x.
+    "arviz>=0.17,<1",
     "openpyxl>=3.1",
 ]
 
@@ -45,6 +47,10 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Translation catalogues: one entry per line reads better than wrapped prose.
+"src/pirao/locales/*.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

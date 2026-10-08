@@ -7,6 +7,7 @@
   "note": "Illustrative numbers. Ten switches cycled until they failed or the test ended at 600 demands: n is the demand on which the switch failed (failure = 1) or the demands it survived (failure = 0). Here we know when each unit failed, so the per-demand model applies, not the binomial. Uniform prior Beta(1, 1).",
   "note_pt": "Números ilustrativos. Dez chaves acionadas até falhar ou até o fim do teste em 600 demandas: n é a demanda em que a chave falhou (failure = 1) ou as demandas a que sobreviveu (failure = 0). Aqui se sabe quando cada unidade falhou, então vale o modelo por demanda, não o binomial. Priori uniforme Beta(1, 1).",
   "source": "Illustrative data, made up for teaching; no real plant.",
+  "source_pt": "Dados ilustrativos, inventados para o ensino; nenhuma planta real.",
   "spec": {
     "likelihood": "bernoulli_geometric",
     "params": {

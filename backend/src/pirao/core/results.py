@@ -572,6 +572,7 @@ def prior_vs_posterior(result: RunResult) -> dict[str, dict[str, Any]]:
             if prior is None
             else [float(v) if np.isfinite(v) else None for v in prior],
             "prior_label": param.family_label,
+            "prior_family": param.family,
         }
     return out
 

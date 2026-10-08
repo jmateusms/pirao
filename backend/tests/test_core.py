@@ -570,6 +570,7 @@ def test_every_example_resolves_and_its_data_validates():
     assert {e["data_kind"] for e in listing} <= {"public", "illustrative"}
     for entry in listing:
         assert entry["title"] and entry["title_pt"] and entry["source"]
+        assert entry["note_pt"] and entry["source_pt"]
         example = get_example(entry["id"])
         spec = ModelSpec.model_validate(example["spec"])
         resolved = resolve(spec)
@@ -614,3 +615,26 @@ def test_kaplan_meier_handles_censoring_and_weights():
     assert km["censored"] == [{"t": 2.0, "s": 0.75}]
     half = kaplan_meier(fake([dict(r, relevance=0.5) for r in rows]))
     assert [s["s"] for s in half["steps"]] == pytest.approx([1.0, 0.75, 0.375, 0.0])
+
+
+def test_every_registry_text_has_a_portuguese_translation():
+    """A new or reworded English string must come with its Portuguese."""
+    from pirao.api.main import get_meta
+    from pirao.locales import missing
+
+    meta = get_meta()
+    texts = []
+    for lik in meta["likelihoods"]:
+        texts += [lik["label"], lik["description"]]
+        for param in lik["parameters"]:
+            texts += [param["label"], param["description"]]
+            texts += [preset["label"] for preset in param["presets"]]
+    for prior in meta["priors"]:
+        texts += [prior["label"], prior["notes"]]
+        texts += [hyper["label"] for hyper in prior["hyperparameters"]]
+    texts += list(meta["sampler_help"].values())
+    assert missing(texts) == []
+
+    pt = get_meta(lang="pt")
+    assert pt["likelihoods"][0]["label"] == "Exponencial (taxa de falha constante)"
+    assert pt["sampler_help"]["seed"].startswith("Fixa os números")

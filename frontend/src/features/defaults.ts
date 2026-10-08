@@ -8,6 +8,7 @@
  */
 
 import type { LikelihoodMeta, Meta, ModelSpec, ParamMeta, PriorMeta } from '../api/types'
+import { decimal } from '../i18n'
 
 /** Opening prior per parameter role, in order of preference. */
 const PREFERRED: Record<string, string[]> = {
@@ -83,5 +84,5 @@ export function missionLabel(likelihood: LikelihoodMeta): string {
 
 /** Format a bound for display, where an absent bound means unbounded. */
 export function formatBound(value: number | null, fallback: string): string {
-  return value === null ? fallback : String(Number(value.toPrecision(6)))
+  return value === null ? fallback : decimal(String(Number(value.toPrecision(6))))
 }
