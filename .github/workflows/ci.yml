@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A second push to the same branch makes the first run's answer irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lint + fast tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install
+        run: pip install -e ".[api,export,dev]"
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Format check
+        run: ruff format --check src tests
+
+      # Deliberately excludes the `slow` marker: those tests compile and sample
+      # real Stan programs, which needs a CmdStan build this job does not have.
+      # Everything else -- the compatibility rules, the bound intersection, the
+      # data contract, code generation and the API surface -- runs here, and
+      # runs without a toolchain.
+      - name: Tests
+        run: pytest -q -m "not slow"
+
+      # Generated Stan is only ever exercised by the slow tier, so at least
+      # prove it still renders for every likelihood.  A template that no longer
+      # produces output would otherwise reach the sampling tier undetected.
+      - name: Render every model
+        run: |
+          python - <<'PY'
+          from pirao.core.registry_likelihoods import LIKELIHOODS
+          from pirao.core.render import render
+          from pirao.core.spec import ModelSpec, ParamSpec, PriorSpec
+
+          PRIORS = {
+              "rate": ("gamma", {"shape": 2.0, "rate": 0.01}),
+              "scale": ("gamma", {"shape": 2.0, "rate": 0.01}),
+              "shape": ("half_normal", {"sigma": 2.0}),
+              "prob": ("beta", {"a": 1.0, "b": 1.0}),
+              "mu": ("normal", {"mu": 5.0, "sigma": 2.0}),
+              "sigma": ("half_normal", {"sigma": 1.0}),
+          }
+
+          for lik in LIKELIHOODS.values():
+              params = {}
+              for p in lik.params:
+                  family, hyper = PRIORS[p.name]
+                  params[p.name] = ParamSpec(
+                      lower=0.0 if p.nat_lo == 0.0 else None,
+                      prior=PriorSpec(family=family, hyper=hyper),
+                  )
+              spec = ModelSpec(
+                  likelihood=lik.id,
+                  params=params,
+                  mission_times=[100.0] if lik.mission == "time" else [],
+                  mission_demands=1 if lik.mission == "demands" else None,
+              )
+              source = render(spec).source
+              assert "parameters {" in source, lik.id
+              print(f"{lik.id}: {len(source.splitlines())} lines")
+          PY
+
+  frontend:
+    name: Frontend (typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build

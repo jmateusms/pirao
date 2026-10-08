@@ -1,0 +1,21 @@
+{% extends "base.stan.j2" %}
+{% block obs_columns %}{% include "_time_columns.stan.j2" %}{% endblock %}
+{% block likelihood %}
+    for (i in 1 : N) {
+      if (relevance[i] > 0) {
+        if (failure[i] == 1)
+          target += relevance[i] * exponential_lpdf(time[i] | {{ args }});
+        else
+          target += relevance[i] * exponential_lccdf(time[i] | {{ args }});
+      }
+    }
+{%- endblock %}
+{% block reliability %}
+    return t <= 0 ? 1 : exp(-rate * t);
+{%- endblock %}
+{% block gq %}
+  real<lower=0> mttf = inv(rate);
+  real<lower=0> b10 = -log1m(0.10) * inv(rate);   // age by which 10% have failed
+{%- endblock %}
+{% block loglik %}failure[i] == 1 ? exponential_lpdf(time[i] | {{ args }})
+                            : exponential_lccdf(time[i] | {{ args }}){% endblock %}

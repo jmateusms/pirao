@@ -1,0 +1,60 @@
+/*
+ * Chart chrome.
+ *
+ * Kept apart from app.css because it belongs to the plots rather than to the
+ * forms: the colours the charts actually draw with live in
+ * `src/components/viz.ts`, where Plotly can read them, and this file styles
+ * only the HTML around them.
+ */
+
+.plot {
+  width: 100%;
+}
+
+/* One control row above the charts it scopes, never inside a chart card. */
+.viz-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 2px 2px 0;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.segmented__option {
+  font: inherit;
+  font-size: 13px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  padding: 5px 14px;
+  cursor: pointer;
+}
+
+.segmented__option:hover {
+  color: var(--ink);
+}
+
+.segmented__option--on {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.segmented__option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Plotly draws its own hover layer; keep the drag cursor honest on 3D scenes. */
+.plot .gl-container {
+  cursor: grab;
+}

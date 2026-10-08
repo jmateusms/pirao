@@ -1,0 +1,104 @@
+{
+  "id": "bounds-trap",
+  "order": 9,
+  "data_kind": "public",
+  "title": "Bounds that change the prior — lognormal(2, 1) cut at 1",
+  "title_pt": "Limites que mudam a priori — lognormal(2, 1) cortada em 1",
+  "note": "The air-conditioning data again, with the prior an old hand-written model used: lognormal(2, 1) on the rate, with the rate bounded to [0, 1]. The bound keeps 2.3% of the prior's mass and moves its median from 7.4 to 0.76, so the prior in force is not the one written down; the Model tab plots the truncated density and warns. Even with 12 failures it still matters: against the first example the rate comes out about 50% higher (mean time to failure 75 h instead of 116 h, R(100 h) 0.26 instead of 0.41), because what is left of the prior piles up near the bound at 1.",
+  "note_pt": "De novo os dados do ar-condicionado, com a priori que um modelo antigo escrito à mão usava: lognormal(2, 1) na taxa, com a taxa limitada a [0, 1]. O limite mantém 2,3% da massa da priori e leva a mediana de 7,4 para 0,76: a priori em vigor não é a que foi escrita, e a aba Model mostra a densidade truncada e avisa. Mesmo com 12 falhas isso pesa: comparada ao primeiro exemplo, a taxa sai cerca de 50% maior (tempo médio até a falha de 75 h em vez de 116 h, R(100 h) de 0,26 em vez de 0,41), porque o que sobra da priori se acumula perto do limite 1.",
+  "source": "Proschan, F. (1963). Theoretical explanation of observed decreasing failure rate. Technometrics 5(3), 375-383. The 12 intervals are the `aircondit` data of Davison and Hinkley (1997), Bootstrap Methods and their Application (R package boot).",
+  "spec": {
+    "likelihood": "exponential",
+    "params": {
+      "rate": {
+        "lower": 0.0,
+        "upper": 1.0,
+        "prior": {
+          "family": "lognormal",
+          "hyper": {
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "mission_times": [
+      24,
+      100
+    ],
+    "mission_demands": null,
+    "curve_horizon": null,
+    "time_unit": "h",
+    "prior_only": false
+  },
+  "rows": [
+    {
+      "device": "F1",
+      "time": 3,
+      "failure": 1
+    },
+    {
+      "device": "F2",
+      "time": 5,
+      "failure": 1
+    },
+    {
+      "device": "F3",
+      "time": 7,
+      "failure": 1
+    },
+    {
+      "device": "F4",
+      "time": 18,
+      "failure": 1
+    },
+    {
+      "device": "F5",
+      "time": 43,
+      "failure": 1
+    },
+    {
+      "device": "F6",
+      "time": 85,
+      "failure": 1
+    },
+    {
+      "device": "F7",
+      "time": 91,
+      "failure": 1
+    },
+    {
+      "device": "F8",
+      "time": 98,
+      "failure": 1
+    },
+    {
+      "device": "F9",
+      "time": 100,
+      "failure": 1
+    },
+    {
+      "device": "F10",
+      "time": 130,
+      "failure": 1
+    },
+    {
+      "device": "F11",
+      "time": 230,
+      "failure": 1
+    },
+    {
+      "device": "F12",
+      "time": 487,
+      "failure": 1
+    }
+  ],
+  "sampler": {
+    "chains": 4,
+    "iter_warmup": 1000,
+    "iter_sampling": 1000,
+    "seed": 2026,
+    "adapt_delta": 0.8,
+    "max_treedepth": 10
+  }
+}

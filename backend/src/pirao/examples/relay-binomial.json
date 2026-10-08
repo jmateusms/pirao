@@ -1,0 +1,61 @@
+{
+  "id": "relay-binomial",
+  "order": 7,
+  "data_kind": "illustrative",
+  "title": "Relay K2 fails to open on demand — binomial, Jeffreys prior (illustrative)",
+  "title_pt": "Relé K2 não abre na demanda — binomial, priori de Jeffreys (ilustrativo)",
+  "note": "Illustrative numbers. Four test campaigns of the relay K2 of the pressure-tank fault tree in faultree: 3 failures to open in 10,000 demands. Jeffreys prior Beta(0.5, 0.5), the usual non-informative choice for a probability per demand in risk analysis. Exact posterior: Beta(3.5, 9997.5), mean 3.5e-4, 90% interval 1.08e-4 to 7.03e-4. The draws of prob can go straight into faultree's uncertainty analysis as samples of K2.",
+  "note_pt": "Números ilustrativos. Quatro campanhas de teste do relé K2 da árvore do tanque pressurizado do faultree: 3 falhas em abrir em 10.000 demandas. Priori de Jeffreys Beta(0,5; 0,5), a escolha não informativa usual para probabilidade por demanda em análise de risco. Posteriori exata: Beta(3,5; 9997,5), média 3,5e-4, intervalo de 90% de 1,08e-4 a 7,03e-4. As amostras de prob podem entrar direto na análise de incerteza do faultree como amostras de K2.",
+  "source": "Illustrative data, made up for teaching; no real plant.",
+  "spec": {
+    "likelihood": "binomial",
+    "params": {
+      "prob": {
+        "lower": 0.0,
+        "upper": 1.0,
+        "prior": {
+          "family": "beta",
+          "hyper": {
+            "a": 0.5,
+            "b": 0.5
+          }
+        }
+      }
+    },
+    "mission_times": [],
+    "mission_demands": 100,
+    "curve_horizon": null,
+    "time_unit": "h",
+    "prior_only": false
+  },
+  "rows": [
+    {
+      "device": "lot 1",
+      "n": 2000,
+      "failures": 1
+    },
+    {
+      "device": "lot 2",
+      "n": 3500,
+      "failures": 1
+    },
+    {
+      "device": "lot 3",
+      "n": 1500,
+      "failures": 0
+    },
+    {
+      "device": "lot 4",
+      "n": 3000,
+      "failures": 1
+    }
+  ],
+  "sampler": {
+    "chains": 4,
+    "iter_warmup": 1000,
+    "iter_sampling": 1000,
+    "seed": 2026,
+    "adapt_delta": 0.9,
+    "max_treedepth": 10
+  }
+}

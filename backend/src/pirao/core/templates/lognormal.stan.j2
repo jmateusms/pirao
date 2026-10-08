@@ -1,0 +1,28 @@
+{% extends "base.stan.j2" %}
+{% block obs_columns %}{% include "_time_columns.stan.j2" %}{% endblock %}
+{% block extra_checks %}
+  for (i in 1 : N)
+    if (failure[i] == 1 && time[i] <= 0)
+      reject("a lognormal failure time must be strictly positive (row ", i, ")");
+{%- endblock %}
+{% block likelihood %}
+    for (i in 1 : N) {
+      if (relevance[i] > 0) {
+        if (failure[i] == 1)
+          target += relevance[i] * lognormal_lpdf(time[i] | {{ args }});
+        else
+          target += relevance[i] * lognormal_lccdf(time[i] | {{ args }});
+      }
+    }
+{%- endblock %}
+{% block reliability %}
+    // The lognormal has no mass at or below zero, so survival there is certain
+    // -- and lognormal_lccdf(0 | ...) is undefined, not 0.
+    return t <= 0 ? 1 : exp(lognormal_lccdf(t | {{ args }}));
+{%- endblock %}
+{% block gq %}
+  real<lower=0> mttf = exp(mu + 0.5 * square(sigma));
+  real<lower=0> b10 = exp(mu + sigma * inv_Phi(0.10));
+{%- endblock %}
+{% block loglik %}failure[i] == 1 ? lognormal_lpdf(time[i] | {{ args }})
+                            : lognormal_lccdf(time[i] | {{ args }}){% endblock %}

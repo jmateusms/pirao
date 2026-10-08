@@ -1,0 +1,40 @@
+{% extends "base.stan.j2" %}
+{% block functions %}
+  /**
+   * One specimen's demand history, on the log scale.
+   *
+   *   failure == 0 : survived all n demands       -> (1 - p)^n
+   *   failure == 1 : failed ON the n-th demand    -> (1 - p)^(n-1) * p
+   *
+   * Written in closed form rather than as a running product.  Multiplying
+   * probabilities in linear space underflows to exactly zero for ordinary
+   * demand counts -- at Stan's default initial draw the smallest failing n is
+   * around 351 -- whereupon log(0) = -inf can break initialisation itself.
+   * This form is O(1) and stable for every p in (0, 1) and every n.
+   */
+  real censored_geometric_lpmf(int n, int f, real p) {
+    return (n - f) * log1m(p) + (f == 1 ? log(p) : 0);
+  }
+{% endblock %}
+{% block obs_columns %}
+  array[N] int<lower=0> n;                     // demands / actuations
+  array[N] int<lower=0, upper=1> failure;      // 1 = failed on demand n
+{%- endblock %}
+{% block extra_checks %}
+  for (i in 1 : N)
+    if (failure[i] == 1 && n[i] < 1)
+      reject("a failure needs at least one demand (row ", i, ")");
+{%- endblock %}
+{% block likelihood %}
+    for (i in 1 : N)
+      if (relevance[i] > 0)
+        target += relevance[i] * censored_geometric_lpmf(n[i] | failure[i], {{ args }});
+{%- endblock %}
+{% block reliability %}
+    // `t` counts demands here: surviving t of them, each independently.
+    return t <= 0 ? 1 : exp(t * log1m(prob));
+{%- endblock %}
+{% block gq %}
+  real<lower=0> mean_demands_to_failure = inv(prob);
+{%- endblock %}
+{% block loglik %}censored_geometric_lpmf(n[i] | failure[i], {{ args }}){% endblock %}

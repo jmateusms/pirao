@@ -1,0 +1,27 @@
+{% extends "base.stan.j2" %}
+{% block obs_columns %}{% include "_time_columns.stan.j2" %}{% endblock %}
+{% block extra_checks %}
+  for (i in 1 : N)
+    if (failure[i] == 1 && time[i] <= 0)
+      reject("a gamma failure time must be strictly positive (row ", i, ")");
+{%- endblock %}
+{% block likelihood %}
+    // Stan's signature is gamma_lpdf(y | SHAPE, RATE) -- the second argument
+    // is an inverse scale.
+    for (i in 1 : N) {
+      if (relevance[i] > 0) {
+        if (failure[i] == 1)
+          target += relevance[i] * gamma_lpdf(time[i] | {{ args }});
+        else
+          target += relevance[i] * gamma_lccdf(time[i] | {{ args }});
+      }
+    }
+{%- endblock %}
+{% block reliability %}
+    return t <= 0 ? 1 : exp(gamma_lccdf(t | {{ args }}));
+{%- endblock %}
+{% block gq %}
+  real<lower=0> mttf = shape * inv(rate);
+{%- endblock %}
+{% block loglik %}failure[i] == 1 ? gamma_lpdf(time[i] | {{ args }})
+                            : gamma_lccdf(time[i] | {{ args }}){% endblock %}

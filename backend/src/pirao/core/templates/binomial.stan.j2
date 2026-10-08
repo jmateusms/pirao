@@ -1,0 +1,22 @@
+{% extends "base.stan.j2" %}
+{% block obs_columns %}
+  array[N] int<lower=0> n;                     // trials in this group
+  array[N] int<lower=0> failures;              // failures among those trials
+{%- endblock %}
+{% block extra_checks %}
+  for (i in 1 : N)
+    if (failures[i] > n[i])
+      reject("a group cannot have more failures than trials (row ", i, ")");
+{%- endblock %}
+{% block likelihood %}
+    // Stan's signature is binomial_lpmf(successes | trials, theta) -- the
+    // count comes first.
+    for (i in 1 : N)
+      if (relevance[i] > 0)
+        target += relevance[i] * binomial_lpmf(failures[i] | n[i], {{ args }});
+{%- endblock %}
+{% block reliability %}
+    // `t` counts trials here: the chance that none of them fails.
+    return t <= 0 ? 1 : exp(t * log1m(prob));
+{%- endblock %}
+{% block loglik %}binomial_lpmf(failures[i] | n[i], {{ args }}){% endblock %}

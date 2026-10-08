@@ -1,0 +1,170 @@
+{
+  "id": "bearings-lognormal",
+  "order": 5,
+  "data_kind": "public",
+  "title": "Ball bearings fatigue — lognormal",
+  "title_pt": "Fadiga de rolamentos — lognormal",
+  "note": "The 23 bearings again with a lognormal likelihood (maximum likelihood: mu 4.15, sigma 0.52). The two models agree in the middle of the data and disagree in the early tail: R(25 Mrev) is about 0.95 here against 0.91 with the Weibull, and B10 about 31 against 27 Mrev. The choice of model matters most where the data are thinnest.",
+  "note_pt": "Os 23 rolamentos com verossimilhança lognormal (máxima verossimilhança: mu 4,15, sigma 0,52). Os dois modelos concordam no meio dos dados e discordam na cauda inicial: R(25 Mrev) dá cerca de 0,95 aqui contra 0,91 com a Weibull, e a B10 cerca de 31 contra 27 Mrev. A escolha do modelo pesa mais onde os dados são mais escassos.",
+  "source": "Lieblein, J. and Zelen, M. (1956). Statistical investigation of the fatigue life of deep-groove ball bearings. Journal of Research of the National Bureau of Standards 57(5), 273-316. Also in Lawless (2003), Statistical Models and Methods for Lifetime Data, 2nd ed., Wiley.",
+  "spec": {
+    "likelihood": "lognormal",
+    "params": {
+      "mu": {
+        "lower": null,
+        "upper": null,
+        "prior": {
+          "family": "normal",
+          "hyper": {
+            "mu": 4,
+            "sigma": 2
+          }
+        }
+      },
+      "sigma": {
+        "lower": 0.0,
+        "upper": null,
+        "prior": {
+          "family": "half_normal",
+          "hyper": {
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "mission_times": [
+      25,
+      50,
+      75
+    ],
+    "mission_demands": null,
+    "curve_horizon": null,
+    "time_unit": "Mrev",
+    "prior_only": false
+  },
+  "rows": [
+    {
+      "device": "B1",
+      "time": 17.88,
+      "failure": 1
+    },
+    {
+      "device": "B2",
+      "time": 28.92,
+      "failure": 1
+    },
+    {
+      "device": "B3",
+      "time": 33.0,
+      "failure": 1
+    },
+    {
+      "device": "B4",
+      "time": 41.52,
+      "failure": 1
+    },
+    {
+      "device": "B5",
+      "time": 42.12,
+      "failure": 1
+    },
+    {
+      "device": "B6",
+      "time": 45.6,
+      "failure": 1
+    },
+    {
+      "device": "B7",
+      "time": 48.48,
+      "failure": 1
+    },
+    {
+      "device": "B8",
+      "time": 51.84,
+      "failure": 1
+    },
+    {
+      "device": "B9",
+      "time": 51.96,
+      "failure": 1
+    },
+    {
+      "device": "B10",
+      "time": 54.12,
+      "failure": 1
+    },
+    {
+      "device": "B11",
+      "time": 55.56,
+      "failure": 1
+    },
+    {
+      "device": "B12",
+      "time": 67.8,
+      "failure": 1
+    },
+    {
+      "device": "B13",
+      "time": 68.64,
+      "failure": 1
+    },
+    {
+      "device": "B14",
+      "time": 68.64,
+      "failure": 1
+    },
+    {
+      "device": "B15",
+      "time": 68.88,
+      "failure": 1
+    },
+    {
+      "device": "B16",
+      "time": 84.12,
+      "failure": 1
+    },
+    {
+      "device": "B17",
+      "time": 93.12,
+      "failure": 1
+    },
+    {
+      "device": "B18",
+      "time": 98.64,
+      "failure": 1
+    },
+    {
+      "device": "B19",
+      "time": 105.12,
+      "failure": 1
+    },
+    {
+      "device": "B20",
+      "time": 105.84,
+      "failure": 1
+    },
+    {
+      "device": "B21",
+      "time": 127.92,
+      "failure": 1
+    },
+    {
+      "device": "B22",
+      "time": 128.04,
+      "failure": 1
+    },
+    {
+      "device": "B23",
+      "time": 173.4,
+      "failure": 1
+    }
+  ],
+  "sampler": {
+    "chains": 4,
+    "iter_warmup": 1000,
+    "iter_sampling": 1000,
+    "seed": 2026,
+    "adapt_delta": 0.8,
+    "max_treedepth": 10
+  }
+}

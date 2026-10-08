@@ -1,0 +1,18 @@
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - pirao-data:/data
+    environment:
+      PIRAO_RUNS_DIR: /data/runs
+      PIRAO_CACHE_DIR: /data/model-cache
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  pirao-data:

@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pirao"
+version = "0.1.0"
+description = "pirão -- Probabilistic Inference for Reliability Analysis from Observed data: pick a likelihood and a prior per parameter, get a fitted Stan model"
+# No `readme`: the project README lives at the repo root, outside this
+# directory, and the Docker build context is ./backend -- so any path that
+# escapes the package root resolves locally but not in the image.
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+
+dependencies = [
+    "cmdstanpy>=1.2",
+    "jinja2>=3.1",
+    "pydantic>=2.6",
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+    "arviz>=0.17",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.110", "uvicorn[standard]>=0.29", "python-multipart>=0.0.9"]
+export = ["pyarrow>=15"]
+# httpx2 backs starlette's TestClient; without it test_api.py cannot even be
+# collected.  Current starlette requires httpx2 specifically and only accepts
+# the older httpx with a deprecation warning.
+dev = ["pytest>=8", "ruff>=0.4", "mypy>=1.9", "httpx2"]
+
+[project.scripts]
+pirao = "pirao.cli:main"
+# The name before 2026-10-08, kept so old scripts and habits still work.
+relimcmc = "pirao.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pirao"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true

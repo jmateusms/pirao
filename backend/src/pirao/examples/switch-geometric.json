@@ -1,0 +1,91 @@
+{
+  "id": "switch-geometric",
+  "order": 8,
+  "data_kind": "illustrative",
+  "title": "Switch S1: demands until the first failure — per-demand (illustrative)",
+  "title_pt": "Chave S1: demandas até a primeira falha — por demanda (ilustrativo)",
+  "note": "Illustrative numbers. Ten switches cycled until they failed or the test ended at 600 demands: n is the demand on which the switch failed (failure = 1) or the demands it survived (failure = 0). Here we know when each unit failed, so the per-demand model applies, not the binomial. Uniform prior Beta(1, 1).",
+  "note_pt": "Números ilustrativos. Dez chaves acionadas até falhar ou até o fim do teste em 600 demandas: n é a demanda em que a chave falhou (failure = 1) ou as demandas a que sobreviveu (failure = 0). Aqui se sabe quando cada unidade falhou, então vale o modelo por demanda, não o binomial. Priori uniforme Beta(1, 1).",
+  "source": "Illustrative data, made up for teaching; no real plant.",
+  "spec": {
+    "likelihood": "bernoulli_geometric",
+    "params": {
+      "prob": {
+        "lower": 0.0,
+        "upper": 1.0,
+        "prior": {
+          "family": "beta",
+          "hyper": {
+            "a": 1,
+            "b": 1
+          }
+        }
+      }
+    },
+    "mission_times": [],
+    "mission_demands": 100,
+    "curve_horizon": null,
+    "time_unit": "h",
+    "prior_only": false
+  },
+  "rows": [
+    {
+      "device": "S1",
+      "n": 120,
+      "failure": 1
+    },
+    {
+      "device": "S2",
+      "n": 410,
+      "failure": 1
+    },
+    {
+      "device": "S3",
+      "n": 95,
+      "failure": 1
+    },
+    {
+      "device": "S4",
+      "n": 290,
+      "failure": 1
+    },
+    {
+      "device": "S5",
+      "n": 260,
+      "failure": 1
+    },
+    {
+      "device": "S6",
+      "n": 515,
+      "failure": 1
+    },
+    {
+      "device": "S7",
+      "n": 600,
+      "failure": 0
+    },
+    {
+      "device": "S8",
+      "n": 600,
+      "failure": 0
+    },
+    {
+      "device": "S9",
+      "n": 600,
+      "failure": 0
+    },
+    {
+      "device": "S10",
+      "n": 600,
+      "failure": 0
+    }
+  ],
+  "sampler": {
+    "chains": 4,
+    "iter_warmup": 1000,
+    "iter_sampling": 1000,
+    "seed": 2026,
+    "adapt_delta": 0.9,
+    "max_treedepth": 10
+  }
+}

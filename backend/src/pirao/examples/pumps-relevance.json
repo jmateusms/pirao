@@ -1,0 +1,110 @@
+{
+  "id": "pumps-relevance",
+  "order": 6,
+  "data_kind": "illustrative",
+  "title": "Pumps: generic prior and a sister plant at half weight (illustrative)",
+  "title_pt": "Bombas: priori genérica e planta irmã com meio peso (ilustrativo)",
+  "note": "Illustrative numbers. Times to failure of the pumps of a pumping station (A, relevance 1) plus records from a similar station (B, relevance 0.5); failure = 0 rows are pumps still running, and the 11 rows count as 8 effective observations. The prior on the rate is the kind a generic database gives: lognormal with median 1e-3 per h and error factor 5 (sigma = ln 5 / 1.645 = 0.98). The posterior mean time to failure, about 750 h (median 680 h), sits between the weighted data alone (about 610 h) and the prior's 1000 h.",
+  "note_pt": "Números ilustrativos. Tempos até a falha das bombas de uma estação (A, relevância 1) e registros de uma estação parecida (B, relevância 0,5); linhas com failure = 0 são bombas ainda operando, e as 11 linhas valem 8 observações efetivas. A priori na taxa é do tipo que um banco de dados genérico fornece: lognormal com mediana 1e-3 por h e fator de erro 5 (sigma = ln 5 / 1,645 = 0,98). O tempo médio até a falha a posteriori, cerca de 750 h (mediana 680 h), fica entre os dados ponderados sozinhos (cerca de 610 h) e as 1000 h da priori.",
+  "source": "Illustrative data, made up for teaching; no real plant.",
+  "spec": {
+    "likelihood": "exponential",
+    "params": {
+      "rate": {
+        "lower": 0.0,
+        "upper": null,
+        "prior": {
+          "family": "lognormal",
+          "hyper": {
+            "mu": -6.908,
+            "sigma": 0.978
+          }
+        }
+      }
+    },
+    "mission_times": [
+      168,
+      720
+    ],
+    "mission_demands": null,
+    "curve_horizon": null,
+    "time_unit": "h",
+    "prior_only": false
+  },
+  "rows": [
+    {
+      "device": "A1",
+      "time": 410,
+      "failure": 1,
+      "relevance": 1.0
+    },
+    {
+      "device": "A2",
+      "time": 655,
+      "failure": 1,
+      "relevance": 1.0
+    },
+    {
+      "device": "A3",
+      "time": 238,
+      "failure": 1,
+      "relevance": 1.0
+    },
+    {
+      "device": "A4",
+      "time": 515,
+      "failure": 1,
+      "relevance": 1.0
+    },
+    {
+      "device": "A5",
+      "time": 600,
+      "failure": 0,
+      "relevance": 1.0
+    },
+    {
+      "device": "B1",
+      "time": 520,
+      "failure": 1,
+      "relevance": 0.5
+    },
+    {
+      "device": "B2",
+      "time": 130,
+      "failure": 1,
+      "relevance": 0.5
+    },
+    {
+      "device": "B3",
+      "time": 760,
+      "failure": 1,
+      "relevance": 0.5
+    },
+    {
+      "device": "B4",
+      "time": 350,
+      "failure": 1,
+      "relevance": 0.5
+    },
+    {
+      "device": "B5",
+      "time": 480,
+      "failure": 1,
+      "relevance": 0.5
+    },
+    {
+      "device": "B6",
+      "time": 900,
+      "failure": 0,
+      "relevance": 0.5
+    }
+  ],
+  "sampler": {
+    "chains": 4,
+    "iter_warmup": 1000,
+    "iter_sampling": 1000,
+    "seed": 2026,
+    "adapt_delta": 0.8,
+    "max_treedepth": 10
+  }
+}

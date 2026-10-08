@@ -1,0 +1,23 @@
+{% extends "base.stan.j2" %}
+{% block obs_columns %}{% include "_time_columns.stan.j2" %}{% endblock %}
+{% block likelihood %}
+    // Stan's signature is weibull_lpdf(y | SHAPE, SCALE); the argument list
+    // comes from the registry so it cannot drift out of that order.
+    for (i in 1 : N) {
+      if (relevance[i] > 0) {
+        if (failure[i] == 1)
+          target += relevance[i] * weibull_lpdf(time[i] | {{ args }});
+        else
+          target += relevance[i] * weibull_lccdf(time[i] | {{ args }});
+      }
+    }
+{%- endblock %}
+{% block reliability %}
+    return t <= 0 ? 1 : exp(weibull_lccdf(t | {{ args }}));
+{%- endblock %}
+{% block gq %}
+  real mttf = scale * tgamma(1 + inv(shape));
+  real b10 = scale * pow(-log1m(0.10), inv(shape));
+{%- endblock %}
+{% block loglik %}failure[i] == 1 ? weibull_lpdf(time[i] | {{ args }})
+                            : weibull_lccdf(time[i] | {{ args }}){% endblock %}
