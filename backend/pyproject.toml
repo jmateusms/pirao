@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pirao"
-version = "0.1.0"
+version = "0.1.1"
 description = "pirão -- Probabilistic Inference for Reliability Analysis from Observed data: pick a likelihood and a prior per parameter, get a fitted Stan model"
 # The PyPI page.  It lives here rather than at the repository root because
 # the Docker build context is ./backend, where a path escaping the package

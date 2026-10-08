@@ -226,3 +226,15 @@ def test_meta_speaks_portuguese_on_request():
     assert [p["id"] for p in english["priors"]] == [
         p["id"] for p in portuguese["priors"]
     ]
+
+
+def test_other_websites_cannot_read_the_api():
+    """Same origin only: no Access-Control-Allow-Origin for a foreign page."""
+    evil = {"Origin": "https://evil.example"}
+    response = client.get("/api/runs", headers=evil)
+    assert "access-control-allow-origin" not in response.headers
+    preflight = client.options(
+        "/api/runs",
+        headers={**evil, "Access-Control-Request-Method": "POST"},
+    )
+    assert "access-control-allow-origin" not in preflight.headers
