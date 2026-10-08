@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "Se usar este software num trabalho, cite-o como abaixo. If you use this software, please cite it as below."
+type: software
+title: "pirão: Probabilistic Inference for Reliability Analysis from Observed data"
+abstract: "Bayesian reliability estimation with Stan: separate choice of likelihood and prior for each parameter, censored and demand data, and reproducible runs, with a local graphical interface."
+authors:
+  - family-names: Santana
+    given-names: Mateus
+    email: jmateussan@gmail.com
+    affiliation: "Universidade Federal de Pernambuco (UFPE), Departamento de Engenharia de Produção, CEERMA"
+version: "0.1.0"
+date-released: "2026-10-08"
+license: Apache-2.0
+repository-code: "https://github.com/jmateusms/pirao"
+keywords:
+  - reliability
+  - Bayesian inference
+  - Stan
+  - MCMC
+  - censored data
