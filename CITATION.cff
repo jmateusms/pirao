@@ -10,7 +10,7 @@ authors:
     affiliation: "Universidade Federal de Pernambuco (UFPE), Departamento de Engenharia de Produção, CEERMA"
 version: "0.1.0"
 date-released: "2026-10-08"
-license: Apache-2.0
+license: BSD-3-Clause
 repository-code: "https://github.com/jmateusms/pirao"
 keywords:
   - reliability

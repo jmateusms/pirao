@@ -10,7 +10,7 @@ description = "pirão -- Probabilistic Inference for Reliability Analysis from O
 # directory, and the Docker build context is ./backend -- so any path that
 # escapes the package root resolves locally but not in the image.
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = { text = "BSD-3-Clause" }
 
 dependencies = [
     "cmdstanpy>=1.2",

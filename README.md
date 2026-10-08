@@ -224,7 +224,11 @@ end-to-end oracles: they check the whole chain, from specification through code
 generation, compilation and sampling, against arithmetic rather than against a
 previous run.
 
+## Citing
+
+If you use pirão in academic work, please cite it: GitHub's **Cite this repository** button (from `CITATION.cff`) gives APA and BibTeX.
+
 ## Licence
 
-Apache-2.0. Stan and CmdStan are BSD-3-Clause and are not redistributed here;
+BSD 3-Clause (see `LICENSE`). Stan and CmdStan are BSD-3-Clause and are not redistributed here;
 `scripts/install_cmdstan.py` fetches CmdStan at install time.

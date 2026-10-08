@@ -1,8 +1,7 @@
 pirão -- Probabilistic Inference for Reliability Analysis from Observed data
-Copyright 2026
+Copyright (c) 2026, Mateus Santana
 
-Licensed under the Apache License, Version 2.0 (the "License").
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+Licensed under the BSD 3-Clause License (see LICENSE).
 
 This product depends on, but does not redistribute, the following:
 
