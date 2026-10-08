@@ -17,5 +17,7 @@ export default defineConfig({
     port: 5173,
     proxy: { '/api': { target: api, changeOrigin: true } },
   },
-  build: { outDir: 'dist', sourcemap: true },
+  // Source maps are for development; the copy shipped in the Python package
+  // (`npm run build:package`) leaves them out to stay small.
+  build: { outDir: 'dist', sourcemap: !process.env.PIRAO_PACKAGE },
 })

@@ -159,7 +159,8 @@ def get_health() -> dict[str, Any]:
             "ok": False,
             "version": __version__,
             "error": str(exc),
-            "hint": "Run `python scripts/install_cmdstan.py` in the backend.",
+            "hint": "Run `pirao install-stan` once (a few minutes; needs a C++ "
+            "compiler).",
         }
 
 

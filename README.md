@@ -19,18 +19,29 @@ evidence for each decision.
 ## Run it
 
 ```bash
+pip install pirao
+pirao install-stan             # once: compiles CmdStan, a few minutes, needs a C++ compiler
+pirao gui                      # opens http://localhost:8765
+```
+
+The interface ships inside the package, so no Node is needed. Python 3.11 or
+later.
+
+### With Docker
+
+```bash
 docker compose up --build      # then open http://localhost:8080
 ```
 
 The first build compiles CmdStan, which takes a few minutes. After that,
 startup is instant.
 
-### Without Docker
+### From a checkout, for development
 
 ```bash
 cd backend
-pip install -e ".[api,export,dev]"
-python scripts/install_cmdstan.py     # once; a few minutes
+pip install -e ".[export,dev]"
+pirao install-stan                    # once; a few minutes
 uvicorn pirao.api.main:app --port 8000
 
 cd ../frontend

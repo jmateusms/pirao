@@ -6,11 +6,23 @@ build-backend = "hatchling.build"
 name = "pirao"
 version = "0.1.0"
 description = "pirão -- Probabilistic Inference for Reliability Analysis from Observed data: pick a likelihood and a prior per parameter, get a fitted Stan model"
-# No `readme`: the project README lives at the repo root, outside this
-# directory, and the Docker build context is ./backend -- so any path that
-# escapes the package root resolves locally but not in the image.
+# The PyPI page.  It lives here rather than at the repository root because
+# the Docker build context is ./backend, where a path escaping the package
+# root would not resolve.
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "BSD-3-Clause" }
+authors = [{ name = "Mateus Santana", email = "jmateussan@gmail.com" }]
+keywords = ["reliability", "bayesian", "stan", "mcmc", "censored-data", "weibull", "prior"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
 
 dependencies = [
     "cmdstanpy>=1.2",
@@ -23,9 +35,20 @@ dependencies = [
     # results.py is written against 0.x.
     "arviz>=0.17,<1",
     "openpyxl>=3.1",
+    # The local interface (`pirao gui`) is the main way in, so its server is
+    # part of the base install, as farofa's and faultree's are.
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "python-multipart>=0.0.9",
 ]
 
+[project.urls]
+Homepage = "https://github.com/jmateusms/pirao"
+Documentation = "https://github.com/jmateusms/pirao#readme"
+Issues = "https://github.com/jmateusms/pirao/issues"
+
 [project.optional-dependencies]
+# Kept for existing commands (`pip install -e ".[api]"`); now part of the base.
 api = ["fastapi>=0.110", "uvicorn[standard]>=0.29", "python-multipart>=0.0.9"]
 export = ["pyarrow>=15"]
 # httpx2 backs starlette's TestClient; without it test_api.py cannot even be
@@ -40,6 +63,13 @@ relimcmc = "pirao.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pirao"]
+# The built web app is not in git (`npm run build:package` writes it); it
+# ships in the wheel and the sdist so `pirao gui` needs no Node.
+artifacts = ["src/pirao/gui_static/**"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/scripts", "/tests", "/README.md", "/pytest.ini"]
+artifacts = ["src/pirao/gui_static/**"]
 
 [tool.ruff]
 line-length = 88
