@@ -12,3 +12,5 @@ dist/
 *.log
 *.tsbuildinfo
 .DS_Store
+backend/src/pirao/gui_static/
+backend/dist/

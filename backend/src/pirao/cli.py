@@ -181,6 +181,12 @@ def cmd_example(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_install_stan(_: argparse.Namespace) -> int:
+    from .install import install_stan
+
+    return install_stan()
+
+
 def cmd_gui(args: argparse.Namespace) -> int:
     from .gui import serve
 
@@ -227,6 +233,10 @@ def main(argv: list[str] | None = None) -> int:
     example_cmd.add_argument("id", help="example id, from `pirao examples`")
     example_cmd.add_argument("--out", default=".", help="directory to write into")
     example_cmd.set_defaults(func=cmd_example)
+
+    sub.add_parser(
+        "install-stan", help="install the pinned CmdStan (once; a few minutes)"
+    ).set_defaults(func=cmd_install_stan)
 
     gui_cmd = sub.add_parser("gui", help="open the graphical interface")
     gui_cmd.add_argument("--host", default="127.0.0.1")

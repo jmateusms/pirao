@@ -22,12 +22,16 @@ _PACKAGE = Path(__file__).resolve().parent
 
 
 def find_static() -> Path | None:
-    """Where the built frontend lives: an override, the package, or a checkout."""
+    """Where the built frontend lives: an override, a checkout, or the package.
+
+    A checkout's ``frontend/dist`` comes before the packaged copy, so that in
+    development a fresh ``npm run build`` wins over an older packaged build.
+    """
     candidates = [
         os.environ.get("PIRAO_STATIC") or os.environ.get("RELIMCMC_STATIC"),
-        _PACKAGE / "gui_static",
         # src/pirao -> backend/src -> backend -> repository root
         _PACKAGE.parents[2] / "frontend" / "dist",
+        _PACKAGE / "gui_static",
     ]
     for candidate in candidates:
         if candidate and (Path(candidate) / "index.html").is_file():
@@ -62,8 +66,9 @@ def serve(
     static = find_static()
     if static is None:
         print(
-            "error: the web app is not built.  Run `npm install && npm run build` "
-            "in frontend/, or set PIRAO_STATIC to a built copy.",
+            "error: the web app is not built.  In a checkout, run "
+            "`npm install && npm run build` in frontend/, or set PIRAO_STATIC "
+            "to a built copy.",
             file=sys.stderr,
         )
         return 2
