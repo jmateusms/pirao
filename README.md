@@ -1,5 +1,7 @@
 # pirão
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23244045.svg)](https://doi.org/10.5281/zenodo.23244045)
+
 **P**robabilistic **I**nference for **R**eliability **A**nalysis from **O**bserved data —
 a sibling of [farofa](https://github.com/jmateusms/farofa) and
 [faultree](https://github.com/jmateusms/faultree). The package and the command are
@@ -244,7 +246,7 @@ previous run.
 
 ## Citing
 
-If you use pirão in academic work, please cite it: GitHub's **Cite this repository** button (from `CITATION.cff`) gives APA and BibTeX.
+If you use pirão in academic work, please cite it: GitHub's **Cite this repository** button (from `CITATION.cff`) gives APA and BibTeX. Releases are archived on Zenodo: [doi:10.5281/zenodo.23244045](https://doi.org/10.5281/zenodo.23244045) cites the software across versions, and each release has its own DOI on that page.
 
 ## Licence
 
