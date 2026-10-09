@@ -1,0 +1,16 @@
+pirão -- Probabilistic Inference for Reliability Analysis from Observed data
+Copyright (c) 2026, Mateus Santana
+
+Licensed under the BSD 3-Clause License (see LICENSE).
+
+This product depends on, but does not redistribute, the following:
+
+  Stan and CmdStan (https://mc-stan.org)
+    Copyright (c) 2011-2024 Stan Development Team
+    Licensed under the BSD 3-Clause License.
+    Fetched at install time by backend/scripts/install_cmdstan.py.
+
+Python dependencies (cmdstanpy, ArviZ, pandas, NumPy, SciPy, Jinja2, pydantic,
+FastAPI, openpyxl) and JavaScript dependencies (React, Vite, Plotly,
+glide-data-grid) are installed from their respective package registries under
+their own licences.

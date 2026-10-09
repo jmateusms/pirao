@@ -704,3 +704,40 @@ def test_the_cache_limit_comes_from_the_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("PIRAO_CACHE_MAX_MB", "0")
     assert cache_max_bytes() is None
     assert prune_cache(tmp_path, None) == []
+
+
+def test_the_cache_rechecks_use_after_taking_the_lock(monkeypatch, tmp_path):
+    import time
+
+    import pirao.core.compile as compile_module
+
+    old = time.time() - 86400
+    entry = _fake_entry(tmp_path, "a" * 16, 1, old)
+    real_try_lock = compile_module._try_lock
+
+    def reused_meanwhile(path):
+        # Another process takes a cache hit between the scan and the lock.
+        (entry / ".last-used").touch()
+        return real_try_lock(path)
+
+    monkeypatch.setattr(compile_module, "_try_lock", reused_meanwhile)
+    assert compile_module.prune_cache(tmp_path, max_bytes=0) == []
+    assert entry.is_dir()
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("inf", None),
+        ("1e400", None),
+        ("nan", "default"),
+        ("lots", "default"),
+        ("-5", None),
+    ],
+)
+def test_an_odd_cache_limit_never_breaks_a_build(monkeypatch, raw, expected):
+    from pirao.core.compile import DEFAULT_CACHE_MAX_MB, cache_max_bytes
+
+    monkeypatch.setenv("PIRAO_CACHE_MAX_MB", raw)
+    default = DEFAULT_CACHE_MAX_MB * 1024 * 1024
+    assert cache_max_bytes() == (default if expected == "default" else expected)

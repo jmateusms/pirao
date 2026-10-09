@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 # A second push to the same branch makes the first run's answer irrelevant.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,8 +15,13 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend (lint + fast tests)
+    name: Backend (lint + fast tests, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest supported version and the newest one tested.
+        python-version: ["3.11", "3.13"]
     defaults:
       run:
         working-directory: backend
@@ -22,7 +30,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: backend/pyproject.toml
 

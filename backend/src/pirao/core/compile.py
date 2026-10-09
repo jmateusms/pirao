@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -63,7 +64,9 @@ def cache_max_bytes() -> int | None:
         mb = float(raw) if raw else DEFAULT_CACHE_MAX_MB
     except ValueError:
         mb = DEFAULT_CACHE_MAX_MB
-    return None if mb <= 0 else int(mb * 1024 * 1024)
+    if math.isnan(mb):
+        mb = DEFAULT_CACHE_MAX_MB
+    return None if mb <= 0 or math.isinf(mb) else int(mb * 1024 * 1024)
 
 
 def toolchain_fingerprint() -> dict[str, str]:
@@ -172,7 +175,7 @@ def prune_cache(
         return []
     entries = []
     for entry in cache_dir.iterdir():
-        if entry.is_dir() and _ENTRY_NAME.match(entry.name):
+        if entry.is_dir() and _ENTRY_NAME.fullmatch(entry.name):
             entries.append((_last_used(entry), entry.name, _entry_bytes(entry)))
     total = sum(size for _, _, size in entries)
     now = time.time()
@@ -186,6 +189,9 @@ def prune_cache(
         if handle is None:
             continue
         try:
+            # A run may have reused the entry between the scan and the lock.
+            if time.time() - _last_used(cache_dir / key) < grace_seconds:
+                continue
             shutil.rmtree(cache_dir / key, ignore_errors=True)
         finally:
             handle.close()
@@ -241,7 +247,7 @@ def compile_model(
         # Eviction must never fail a run that already has its binary.
         try:
             prune_cache(cache_dir, cache_max_bytes(), keep=frozenset({key}))
-        except OSError:
+        except (OSError, ValueError):
             pass
 
     return CompiledModel(

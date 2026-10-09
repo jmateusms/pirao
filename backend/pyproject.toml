@@ -11,14 +11,16 @@ description = "pirão -- Probabilistic Inference for Reliability Analysis from O
 # root would not resolve.
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "BSD-3-Clause" }
+license = "BSD-3-Clause"
+# Copies of the files at the repository root, which is outside the package
+# root (and the Docker context); keep them in step.
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Mateus Santana", email = "jmateussan@gmail.com" }]
 keywords = ["reliability", "bayesian", "stan", "mcmc", "censored-data", "weibull", "prior"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Education",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Mathematics",

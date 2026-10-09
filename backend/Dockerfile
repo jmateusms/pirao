@@ -5,16 +5,24 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential curl && rm -rf /var/lib/apt/lists/*
 
+# The server compiles and runs Stan programs, so it gets no root privileges.
+RUN useradd --create-home --uid 10001 pirao \
+    && mkdir -p /data && chown pirao:pirao /data
+
 WORKDIR /app
-COPY pyproject.toml ./
+# The package metadata reads README.md, and LICENSE/NOTICE ship with it.
+COPY pyproject.toml README.md LICENSE NOTICE ./
 COPY src ./src
 COPY scripts ./scripts
 
 RUN pip install --no-cache-dir -e ".[api,export]"
 
+USER pirao
+
 # The version is pinned deliberately: resolving "latest" needs a call to
 # api.github.com that many corporate proxies block, and an unpinned toolchain
-# would silently change what the compile cache is keyed on.
+# would silently change what the compile cache is keyed on.  Installed as the
+# user that runs the server, into its home.
 RUN python scripts/install_cmdstan.py
 
 ENV PIRAO_RUNS_DIR=/data/runs \

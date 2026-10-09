@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- The compiled-model cache has a size limit: past `PIRAO_CACHE_MAX_MB`
+  (2048 by default, `0` for no limit) the least recently used binaries are
+  removed. Binaries used in the last 15 minutes or being built are kept.
+- Packaging: the wheel and the sdist now carry `LICENSE` and `NOTICE`.
+- Docker: the image builds again (it lacked the README the package metadata
+  reads) and runs as an unprivileged user (uid 10001). A `pirao-data` volume
+  created by an older image is owned by root; hand it over once with
+  `docker compose run --rm -u root backend chown -R 10001:10001 /data`.
+- Packaging: the license is the SPDX expression `BSD-3-Clause`; the matching
+  trove classifier is gone, as PEP 639 asks.
+
 ## 0.1.1 — 2026-10-08
 
 - Security: the API no longer sends `Access-Control-Allow-Origin: *`. Every way
