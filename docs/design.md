@@ -245,7 +245,7 @@ differ by a factor of two at the lower end.
 | R2 | Silent wrong answers from argument order or data keys: both compile, sample and report R-hat 1.00. | `stan_arg_order` in the registry with a test, a contract test between the data block and the data dictionary, and the conjugate oracles. Not yet: golden source files and a parameter-recovery test on simulated Weibull data. |
 | R3 | Improper posteriors that look converged. | The `is_proper` hard block and prior-only runs. Not yet: a warning when Σ relevance is small next to the number of parameters. |
 | R4 | Stale compiled binaries after a toolchain upgrade. | The toolchain is part of the cache key. |
-| R5 | Cache growth: each binary is 10 to 40 MB. | A size-capped cache (not yet implemented). |
+| R5 | Cache growth: each binary is 10 to 40 MB. | A size-capped cache: past `PIRAO_CACHE_MAX_MB` (2048 by default, `0` for no limit) the least recently used binaries go, except those used in the last 15 minutes or being built. |
 | R6 | Users over-trusting a fractional pseudo-posterior. | Labelled as such in the interface and in exports. |
 
 ## 6. Repository layout

@@ -638,3 +638,69 @@ def test_every_registry_text_has_a_portuguese_translation():
     pt = get_meta(lang="pt")
     assert pt["likelihoods"][0]["label"] == "Exponencial (taxa de falha constante)"
     assert pt["sampler_help"]["seed"].startswith("Fixa os números")
+
+
+# --------------------------------------------------------------------------
+# Binary cache eviction (no toolchain needed: entries are fake directories)
+# --------------------------------------------------------------------------
+
+
+def _fake_entry(cache_dir, key, megabytes, used_at):
+    import os
+
+    entry = cache_dir / key
+    entry.mkdir(parents=True)
+    (entry / "model").write_bytes(b"\0" * int(megabytes * 1024 * 1024))
+    marker = entry / ".last-used"
+    marker.touch()
+    os.utime(marker, (used_at, used_at))
+    return entry
+
+
+def test_the_cache_evicts_least_recently_used_binaries_first(tmp_path):
+    import time
+
+    from pirao.core.compile import prune_cache
+
+    old = time.time() - 86400
+    _fake_entry(tmp_path, "a" * 16, 1, old)
+    _fake_entry(tmp_path, "b" * 16, 1, old + 10)
+    _fake_entry(tmp_path, "c" * 16, 1, old + 20)
+
+    evicted = prune_cache(tmp_path, max_bytes=int(1.5 * 1024 * 1024))
+
+    assert evicted == ["a" * 16, "b" * 16]
+    assert sorted(p.name for p in tmp_path.iterdir() if p.is_dir()) == ["c" * 16]
+
+
+def test_the_cache_spares_kept_recent_and_locked_entries(tmp_path):
+    import fcntl
+    import time
+
+    from pirao.core.compile import prune_cache
+
+    old = time.time() - 86400
+    _fake_entry(tmp_path, "a" * 16, 1, old)  # being built: lock held
+    _fake_entry(tmp_path, "b" * 16, 1, old + 10)  # the run's own binary
+    _fake_entry(tmp_path, "c" * 16, 1, time.time())  # just used, maybe sampling
+    _fake_entry(tmp_path, "d" * 16, 1, old + 20)  # the only one fair to evict
+    (tmp_path / "not-an-entry").mkdir()
+
+    with (tmp_path / f".{'a' * 16}.lock").open("w") as held:
+        fcntl.flock(held.fileno(), fcntl.LOCK_EX)
+        evicted = prune_cache(tmp_path, max_bytes=0, keep=frozenset({"b" * 16}))
+
+    assert evicted == ["d" * 16]
+    assert (tmp_path / "not-an-entry").is_dir()
+
+
+def test_the_cache_limit_comes_from_the_environment(monkeypatch, tmp_path):
+    from pirao.core.compile import DEFAULT_CACHE_MAX_MB, cache_max_bytes, prune_cache
+
+    monkeypatch.delenv("PIRAO_CACHE_MAX_MB", raising=False)
+    assert cache_max_bytes() == DEFAULT_CACHE_MAX_MB * 1024 * 1024
+    monkeypatch.setenv("PIRAO_CACHE_MAX_MB", "512")
+    assert cache_max_bytes() == 512 * 1024 * 1024
+    monkeypatch.setenv("PIRAO_CACHE_MAX_MB", "0")
+    assert cache_max_bytes() is None
+    assert prune_cache(tmp_path, None) == []

@@ -216,7 +216,9 @@ hyperparameter *values* are Stan `data`, never source literals — changing a
 number reuses the compiled binary, and only a structural change (a different
 prior family, or a bound crossing the prior's support) triggers a rebuild. The
 cache key includes the CmdStan and stanc versions, because a binary built by a
-different toolchain is a different program.
+different toolchain is a different program. The cache keeps up to 2 GB of
+binaries and then drops the least recently used; set `PIRAO_CACHE_MAX_MB` to
+change that (`0` means no limit).
 
 **Improper priors are refused, not warned about.** A flat or Jeffreys prior
 with only one finite bound can give an improper posterior — and Stan will not

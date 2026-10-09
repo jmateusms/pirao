@@ -18,7 +18,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -27,6 +29,19 @@ from .render import RenderedModel
 #: Bump when a change to this package alters the meaning of generated source
 #: without altering the text (for example, a change to how data is assembled).
 GENERATOR_VERSION = "1"
+
+#: Ceiling for the binary cache.  Each structure costs 10 to 40 MB, so this
+#: holds some 50 to 200 of them; ``PIRAO_CACHE_MAX_MB`` overrides it and ``0``
+#: turns the limit off.
+DEFAULT_CACHE_MAX_MB = 2048
+
+#: Entries used this recently are never evicted, even over the limit: a run
+#: that has just compiled (or reused) a binary samples it right afterwards,
+#: outside the build lock, and must not find the executable gone.
+EVICTION_GRACE_SECONDS = 15 * 60
+
+_ENTRY_NAME = re.compile(r"^[0-9a-f]{16}$")
+_LAST_USED = ".last-used"
 
 
 class ToolchainError(RuntimeError):
@@ -39,6 +54,16 @@ def default_cache_dir() -> Path:
         return Path(root)
     base = os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")
     return Path(base) / "pirao" / "models"
+
+
+def cache_max_bytes() -> int | None:
+    """The cache ceiling in bytes, or None when the limit is off."""
+    raw = (os.environ.get("PIRAO_CACHE_MAX_MB") or "").strip()
+    try:
+        mb = float(raw) if raw else DEFAULT_CACHE_MAX_MB
+    except ValueError:
+        mb = DEFAULT_CACHE_MAX_MB
+    return None if mb <= 0 else int(mb * 1024 * 1024)
 
 
 def toolchain_fingerprint() -> dict[str, str]:
@@ -104,6 +129,71 @@ def _lock(path: Path):
     return handle
 
 
+def _try_lock(path: Path):
+    """The same lock without waiting: None when another process holds it."""
+    import fcntl
+
+    handle = path.open("w")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        handle.close()
+        return None
+    return handle
+
+
+def _last_used(entry: Path) -> float:
+    marker = entry / _LAST_USED
+    if marker.exists():
+        return marker.stat().st_mtime
+    # Entries built before the marker existed: the newest file is the build.
+    return max((p.stat().st_mtime for p in entry.iterdir()), default=0.0)
+
+
+def _entry_bytes(entry: Path) -> int:
+    return sum(p.stat().st_size for p in entry.rglob("*") if p.is_file())
+
+
+def prune_cache(
+    cache_dir: Path,
+    max_bytes: int | None,
+    keep: frozenset[str] = frozenset(),
+    grace_seconds: float = EVICTION_GRACE_SECONDS,
+) -> list[str]:
+    """Evict least recently used binaries until the cache fits ``max_bytes``.
+
+    Entries named in ``keep``, used within ``grace_seconds``, or whose build
+    lock another process holds are skipped, so the cache can stay over the
+    limit until they age out.  Lock files are left in place: unlinking one
+    while another process waits on it would let two builds of the same key
+    run at once.  Returns the evicted keys.
+    """
+    if max_bytes is None or not cache_dir.is_dir():
+        return []
+    entries = []
+    for entry in cache_dir.iterdir():
+        if entry.is_dir() and _ENTRY_NAME.match(entry.name):
+            entries.append((_last_used(entry), entry.name, _entry_bytes(entry)))
+    total = sum(size for _, _, size in entries)
+    now = time.time()
+    evicted = []
+    for used, key, size in sorted(entries):
+        if total <= max_bytes:
+            break
+        if key in keep or now - used < grace_seconds:
+            continue
+        handle = _try_lock(cache_dir / f".{key}.lock")
+        if handle is None:
+            continue
+        try:
+            shutil.rmtree(cache_dir / key, ignore_errors=True)
+        finally:
+            handle.close()
+        total -= size
+        evicted.append(key)
+    return evicted
+
+
 def compile_model(
     rendered: RenderedModel,
     cache_dir: Path | None = None,
@@ -119,7 +209,8 @@ def compile_model(
 
     fingerprint = toolchain_fingerprint()
     key = cache_key(rendered.source, fingerprint)
-    root = (cache_dir or default_cache_dir()) / key
+    cache_dir = cache_dir or default_cache_dir()
+    root = cache_dir / key
     stan_file = root / "model.stan"
     exe_file = root / "model"
 
@@ -140,8 +231,18 @@ def compile_model(
             model = CmdStanModel(stan_file=str(stan_file))
         else:
             model = CmdStanModel(exe_file=str(exe_file), stan_file=str(stan_file))
+        # A separate marker, because touching the executable or the source
+        # would change what cmdstanpy compares to decide on a rebuild.
+        (root / _LAST_USED).touch()
     finally:
         handle.close()
+
+    if not cached:
+        # Eviction must never fail a run that already has its binary.
+        try:
+            prune_cache(cache_dir, cache_max_bytes(), keep=frozenset({key}))
+        except OSError:
+            pass
 
     return CompiledModel(
         key=key,
