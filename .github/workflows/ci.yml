@@ -37,6 +37,22 @@ jobs:
       - name: Install
         run: pip install -e ".[api,export,dev]"
 
+      # The standalone compiler front end only (no CmdStan build), pinned to the
+      # version install-stan uses.  tests/test_stanc.py compiles every
+      # likelihood x prior pair with it; PIRAO_REQUIRE_STANC makes a missing
+      # binary a failure here instead of a skip.
+      - name: Install stanc
+        env:
+          STANC_VERSION: "2.36.0"
+          STANC_SHA256: 1e1da91ad6b0ea9d75fd656403836e91075563b86923ba3875ebff132263b63e
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/stanc" \
+            "https://github.com/stan-dev/stanc3/releases/download/v${STANC_VERSION}/linux-stanc"
+          echo "${STANC_SHA256}  $RUNNER_TEMP/stanc" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/stanc"
+          echo "STANC=$RUNNER_TEMP/stanc" >> "$GITHUB_ENV"
+          echo "PIRAO_REQUIRE_STANC=1" >> "$GITHUB_ENV"
+
       - name: Lint
         run: ruff check src tests
 
